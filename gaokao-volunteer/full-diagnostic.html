@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>完整诊断 - 高考志愿系统</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1, h2 { color: #333; }
+    .status { padding: 10px; border-radius: 4px; margin: 10px 0; font-weight: bold; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+    .warning { background: #fff3cd; color: #856404; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    button { padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+    button:hover { background: #0052a3; }
+    .log { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    .log-line { padding: 3px 0; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔍 高考志愿系统 - 完整诊断报告</h1>
+  
+  <div class="card">
+    <h2>📋 系统状态检查</h2>
+    <div id="status-check"></div>
+    <button onclick="runFullDiagnosis()">🚀 运行完整诊断</button>
+    <button onclick="testOriginalPage()">📄 测试原始index.html</button>
+  </div>
+
+  <div class="card">
+    <h2>🔧 脚本加载检查</h2>
+    <div id="script-check"></div>
+  </div>
+
+  <div class="card">
+    <h2>📊 数据可用性检查</h2>
+    <div id="data-check"></div>
+  </div>
+
+  <div class="card">
+    <h2>🧪 功能测试</h2>
+    <div id="function-test"></div>
+  </div>
+
+  <div class="card">
+    <h2>📝 诊断日志</h2>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- 加载所有脚本 -->
+<script src="data/colleges.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  function addStatus(elementId, message, status) {
+    const el = document.getElementById(elementId);
+    const div = document.createElement('div');
+    div.className = `status ${status}`;
+    div.textContent = message;
+    el.appendChild(div);
+  }
+
+  function log(message) {
+    const el = document.getElementById('log');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function runFullDiagnosis() {
+    document.getElementById('status-check').innerHTML = '';
+    document.getElementById('script-check').innerHTML = '';
+    document.getElementById('data-check').innerHTML = '';
+    document.getElementById('function-test').innerHTML = '';
+    document.getElementById('log').innerHTML = '';
+
+    log('=== 开始诊断 ===');
+
+    // 1. 检查脚本加载
+    log('检查脚本加载...');
+    
+    addStatus('script-check', 'COLLEGES 对象: ' + (typeof COLLEGES !== 'undefined' ? '✓ 已加载' : '✗ 未加载'), typeof COLLEGES !== 'undefined' ? 'success' : 'error');
+    log(`  COLLEGES: ${typeof COLLEGES} ${typeof COLLEGES !== 'undefined' ? '(' + COLLEGES.length + '所)' : ''}`);
+
+    addStatus('script-check', 'GaoKaoAnalyzer 类: ' + (typeof GaoKaoAnalyzer !== 'undefined' ? '✓ 已加载' : '✗ 未加载'), typeof GaoKaoAnalyzer !== 'undefined' ? 'success' : 'error');
+    log(`  GaoKaoAnalyzer: ${typeof GaoKaoAnalyzer}`);
+
+    addStatus('script-check', 'ExamConverter 类: ' + (typeof ExamConverter !== 'undefined' ? '✓ 已加载' : '✗ 未加载'), typeof ExamConverter !== 'undefined' ? 'success' : 'error');
+    log(`  ExamConverter: ${typeof ExamConverter}`);
+
+    // 2. 检查数据
+    log('检查数据...');
+    
+    if (typeof COLLEGES !== 'undefined') {
+      addStatus('data-check', `院校数据: ✓ 已加载 ${COLLEGES.length} 所院校`, 'success');
+      log(`  COLLEGES.length: ${COLLEGES.length}`);
+      if (COLLEGES.length > 0) {
+        log(`  第一所院校: ${JSON.stringify(COLLEGES[0]).substring(0, 100)}...`);
+      }
+    } else {
+      addStatus('data-check', '院校数据: ✗ 未加载', 'error');
+      log('  COLLEGES 未定义');
+    }
+
+    // 3. 检查全局函数
+    log('检查全局函数...');
+    
+    addStatus('function-test', 'generateReport 函数: ' + (typeof generateReport !== 'undefined' ? '✓ 已定义' : '✗ 未定义'), typeof generateReport !== 'undefined' ? 'success' : 'error');
+    log(`  generateReport: ${typeof generateReport}`);
+
+    addStatus('function-test', 'renderReport 函数: ' + (typeof renderReport !== 'undefined' ? '✓ 已定义' : '✗ 未定义'), typeof renderReport !== 'undefined' ? 'success' : 'error');
+    log(`  renderReport: ${typeof renderReport}`);
+
+    // 4. 尝试创建分析器
+    log('测试创建分析器...');
+    try {
+      const analyzer = new GaoKaoAnalyzer({
+        score: 630,
+        interests: [],
+        cityPreference: []
+      });
+      log('  ✓ 分析器创建成功');
+      addStatus('function-test', '分析器测试: ✓ 成功创建', 'success');
+      
+      const result = analyzer.analyze();
+      log(`  ✓ 分析执行成功，返回了 ${Object.keys(result).length} 个属性`);
+      addStatus('function-test', '分析执行: ✓ 成功', 'success');
+    } catch (e) {
+      log(`  ✗ 分析器错误: ${e.message}`);
+      addStatus('function-test', `分析器错误: ${e.message}`, 'error');
+    }
+
+    log('=== 诊断完成 ===');
+  }
+
+  function testOriginalPage() {
+    log('尝试加载原始页面...');
+    try {
+      fetch('/index.html')
+        .then(r => r.text())
+        .then(html => {
+          log(`✓ index.html 已加载，大小: ${html.length} 字节`);
+          addStatus('status-check', `原始页面: ✓ 可访问 (${html.length} 字节)`, 'success');
+          
+          // 检查是否有脚本标签
+          const scripts = html.match(/<script[^>]*src=[^>]*>/g) || [];
+          log(`  页面包含 ${scripts.length} 个外部脚本标签`);
+          scripts.forEach((s, i) => {
+            log(`    ${i+1}. ${s}`);
+          });
+        })
+        .catch(e => {
+          log(`✗ 无法访问 index.html: ${e.message}`);
+          addStatus('status-check', `原始页面: ✗ 无法访问`, 'error');
+        });
+    } catch (e) {
+      log(`✗ 错误: ${e.message}`);
+    }
+  }
+
+  // 页面加载完成后自动运行诊断
+  window.addEventListener('load', () => {
+    log('页面加载完成，准备诊断...');
+    setTimeout(runFullDiagnosis, 500);
+  });
+</script>
+
+</body>
+</html>

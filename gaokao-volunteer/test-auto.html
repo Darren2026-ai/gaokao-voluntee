@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户流程测试 - 模拟真实操作</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei'; background: #f5f5f5; padding: 20px; }
+    .test-console { 
+      max-width: 400px; 
+      position: fixed; 
+      right: 20px; 
+      top: 20px; 
+      background: white; 
+      border-radius: 8px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 15px;
+      z-index: 10000;
+      max-height: 60vh;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .console-title { font-weight: 700; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0; }
+    .console-item { margin: 5px 0; padding: 5px; border-radius: 3px; line-height: 1.4; }
+    .console-ok { background: #d4edda; color: #155724; }
+    .console-error { background: #f8d7da; color: #721c24; }
+    .console-info { background: #d1ecf1; color: #0c5460; }
+    .console-warning { background: #fff3cd; color: #856404; }
+    .btn-test { 
+      position: fixed; 
+      bottom: 20px; 
+      right: 20px; 
+      padding: 12px 20px; 
+      background: #007AFF; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      z-index: 10000;
+      font-size: 14px;
+    }
+    .btn-test:hover { background: #0052CC; }
+    .btn-test:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="test-console" id="testConsole">
+  <div class="console-title">🧪 测试运行状态</div>
+  <div id="consoleLogs"></div>
+</div>
+
+<button class="btn-test" id="testBtn" onclick="runAutoTest()">开始自动化测试</button>
+
+<!-- 加载实际的系统页面 -->
+<iframe id="sysFrame" src="index.html" style="width: 100%; height: 100vh; border: none;"></iframe>
+
+<script>
+let testLogs = [];
+let isTesting = false;
+
+function addLog(message, type = 'info') {
+  const time = new Date().toLocaleTimeString('zh-CN');
+  const log = `[${time}] ${message}`;
+  testLogs.push({ message: log, type });
+  
+  const consoleLogs = document.getElementById('consoleLogs');
+  const item = document.createElement('div');
+  item.className = `console-item console-${type}`;
+  item.textContent = log;
+  consoleLogs.appendChild(item);
+  consoleLogs.scrollTop = consoleLogs.scrollHeight;
+  
+  console.log(`[${type.toUpperCase()}]`, message);
+}
+
+async function runAutoTest() {
+  if (isTesting) {
+    addLog('测试已在运行中...', 'warning');
+    return;
+  }
+  
+  isTesting = true;
+  document.getElementById('testBtn').disabled = true;
+  testLogs = [];
+  document.getElementById('consoleLogs').innerHTML = '';
+  
+  try {
+    const frame = document.getElementById('sysFrame');
+    const frameWin = frame.contentWindow;
+    const frameDoc = frame.contentDocument || frame.contentWindow.document;
+    
+    addLog('========== 开始自动化测试 ==========', 'info');
+    addLog('1️⃣ 检查脚本加载...', 'info');
+    
+    // 等待iframe完全加载
+    await new Promise(resolve => {
+      const check = () => {
+        if (frameWin.COLLEGES && frameWin.GaoKaoAnalyzer && frameWin.generateReport) {
+          resolve();
+        } else {
+          setTimeout(check, 500);
+        }
+      };
+      check();
+    });
+    
+    addLog('✅ 脚本加载完毕', 'ok');
+    addLog(`✅ COLLEGES 数据: ${frameWin.COLLEGES?.length || 0} 所高校`, 'ok');
+    addLog(`✅ GaoKaoAnalyzer: 类已加载`, 'ok');
+    addLog(`✅ generateReport: 函数已加载`, 'ok');
+    
+    // 填写 Step 1
+    addLog('2️⃣ 填写 Step 1: 基本信息...', 'info');
+    frameDoc.getElementById('f-name').value = '张三';
+    frameDoc.querySelector('input[name="gender"][value="女"]').checked = true;
+    frameDoc.getElementById('f-province').value = '广东';
+    frameDoc.getElementById('f-subject').value = '物理类（物化生）';
+    addLog('✅ Step 1 已填写', 'ok');
+    
+    // 前进到 Step 2
+    frameWin.nextStep(1);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 2', 'ok');
+    
+    // 填写 Step 2
+    addLog('3️⃣ 填写 Step 2: 成绩信息...', 'info');
+    frameDoc.getElementById('f-score').value = '591';
+    frameDoc.getElementById('f-rank').value = '11500';
+    frameWin.updateScorePreview();
+    addLog('✅ Step 2 已填写 (分数: 591, 位次: 11500)', 'ok');
+    
+    // 前进到 Step 3
+    frameWin.nextStep(2);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 3', 'ok');
+    
+    // 填写 Step 3
+    addLog('4️⃣ 填写 Step 3: 兴趣与性格...', 'info');
+    const interestItems = frameDoc.querySelectorAll('.interest-item');
+    if (interestItems.length > 0) {
+      interestItems[0].click();
+      interestItems[1]?.click();
+      addLog(`✅ 已选择 ${Math.min(2, interestItems.length)} 个兴趣`, 'ok');
+    }
+    
+    const majorItems = frameDoc.querySelectorAll('.major-item');
+    if (majorItems.length > 0) {
+      majorItems[0].click();
+      addLog('✅ 已选择 1 个专业大类', 'ok');
+    }
+    
+    frameDoc.getElementById('f-target-major').value = '计算机相关';
+    
+    // 前进到 Step 4
+    frameWin.nextStep(3);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 4', 'ok');
+    
+    // 填写 Step 4
+    addLog('5️⃣ 填写 Step 4: 城市选择...', 'info');
+    const cityItems = frameDoc.querySelectorAll('.city-item');
+    if (cityItems.length > 0) {
+      cityItems[0].click();
+      addLog('✅ 已选择城市', 'ok');
+    }
+    
+    // 前进到 Step 5
+    frameWin.nextStep(4);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 5', 'ok');
+    
+    // 填写 Step 5
+    addLog('6️⃣ 填写 Step 5: 志愿优先级...', 'info');
+    const priorityCards = frameDoc.querySelectorAll('.priority-card');
+    if (priorityCards.length > 0) {
+      frameWin.selectPriority(priorityCards[3], 'balanced');
+      addLog('✅ 已选择优先级: 平衡选择', 'ok');
+    }
+    
+    // 前进到 Step 6
+    frameWin.nextStep(5);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 6', 'ok');
+    
+    // 填写 Step 6
+    addLog('7️⃣ 填写 Step 6: 家庭与资源...', 'info');
+    const familyItems = frameDoc.querySelectorAll('.check-item');
+    if (familyItems.length > 0) {
+      familyItems[0].click();
+      addLog('✅ 已选择家庭资源', 'ok');
+    }
+    
+    const awayRadio = frameDoc.querySelector('input[name="away"][value="支持"]');
+    if (awayRadio) awayRadio.checked = true;
+    
+    frameDoc.getElementById('f-extra').value = '测试备注';
+    addLog('✅ Step 6 已填写', 'ok');
+    
+    // 前进到 Step 7
+    frameWin.nextStep(6);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    addLog('✅ 已进入 Step 7 (确认信息)', 'ok');
+    
+    // 生成报告
+    addLog('8️⃣ 生成报告...', 'warning');
+    addLog('⏳ 正在处理数据，请稍候...', 'warning');
+    
+    // 调用生成报告
+    const reportPromise = frameWin.generateReport();
+    if (reportPromise && reportPromise.catch) {
+      await reportPromise;
+    }
+    
+    // 等待一下让报告渲染完成
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // 检查报告是否生成
+    const reportContent = frameDoc.getElementById('reportContent');
+    if (reportContent && reportContent.innerHTML && reportContent.innerHTML.length > 100) {
+      addLog(`✅ 报告生成成功！(${reportContent.innerHTML.length} 字符)`, 'ok');
+      addLog('✅ 页面已切换到报告视图', 'ok');
+      
+      // 额外检查报告内容
+      const hasHero = reportContent.innerHTML.includes('report-hero');
+      const hasCollege = reportContent.innerHTML.includes('college-type-tabs');
+      const hasStrategy = reportContent.innerHTML.includes('城市选择策略');
+      
+      if (hasHero && hasCollege && hasStrategy) {
+        addLog('✅ 报告所有关键部分都已生成', 'ok');
+        addLog('========== 测试完全成功！ ==========', 'ok');
+        addLog('🎉 系统运行正常，用户可以使用', 'ok');
+      } else {
+        addLog('⚠️ 报告内容不完整', 'warning');
+      }
+    } else {
+      addLog('❌ 报告为空或未生成', 'error');
+    }
+    
+  } catch (error) {
+    addLog(`❌ 测试失败: ${error.message}`, 'error');
+    addLog(`错误位置: ${error.stack?.split('\n')[1]}`, 'error');
+  } finally {
+    isTesting = false;
+    document.getElementById('testBtn').disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>

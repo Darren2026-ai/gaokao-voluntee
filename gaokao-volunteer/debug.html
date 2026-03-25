@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>调试页面</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+    .debug-box { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+
+<h1>🔧 高考志愿系统调试</h1>
+
+<div class="debug-box">
+  <h3>📌 脚本加载状态</h3>
+  <div id="status"></div>
+</div>
+
+<div class="debug-box">
+  <h3>📊 数据检查</h3>
+  <div id="data-check"></div>
+</div>
+
+<div class="debug-box">
+  <h3>🧪 测试分析</h3>
+  <button onclick="testAnalyzer()">点击测试分析引擎</button>
+  <div id="test-result"></div>
+</div>
+
+<script src="data/colleges.js"></script>
+<script>
+  // 检查脚本是否加载
+  const statusDiv = document.getElementById('status');
+  
+  console.log('开始诊断...');
+  
+  // 检查 COLLEGES
+  if (typeof COLLEGES !== 'undefined') {
+    statusDiv.innerHTML += '<p class="success">✅ COLLEGES 已加载 (' + COLLEGES.length + ' 所院校)</p>';
+  } else {
+    statusDiv.innerHTML += '<p class="error">❌ COLLEGES 未定义</p>';
+  }
+  
+  // 检查其他全局变量
+  if (typeof GUANGDONG_2025_RANK_TABLE !== 'undefined') {
+    statusDiv.innerHTML += '<p class="success">✅ GUANGDONG_2025_RANK_TABLE 已加载</p>';
+  } else {
+    statusDiv.innerHTML += '<p class="error">❌ GUANGDONG_2025_RANK_TABLE 未定义</p>';
+  }
+  
+  if (typeof EXAM_CONVERSION !== 'undefined') {
+    statusDiv.innerHTML += '<p class="success">✅ EXAM_CONVERSION 已加载</p>';
+  } else {
+    statusDiv.innerHTML += '<p class="error">❌ EXAM_CONVERSION 未定义</p>';
+  }
+  
+  // 数据检查
+  const dataDiv = document.getElementById('data-check');
+  if (typeof COLLEGES !== 'undefined' && COLLEGES.length > 0) {
+    dataDiv.innerHTML += `<p class="info">第一所院校: ${COLLEGES[0].name}</p>`;
+    dataDiv.innerHTML += `<p class="info">第一所院校有 ${COLLEGES[0].groups.length} 个专业组</p>`;
+    dataDiv.innerHTML += `<p class="info">第一个专业组数据: ${JSON.stringify(COLLEGES[0].groups[0]).substring(0, 100)}...</p>`;
+  }
+  
+  // 测试分析器
+  window.testAnalyzer = function() {
+    const testDiv = document.getElementById('test-result');
+    testDiv.innerHTML = '正在测试...';
+    
+    try {
+      if (typeof COLLEGES === 'undefined') {
+        testDiv.innerHTML = '<p class="error">❌ COLLEGES 未定义，无法测试</p>';
+        return;
+      }
+      
+      // 模拟用户数据
+      const userData = {
+        name: '测试学生',
+        gender: '女',
+        province: '广东',
+        subject: '物理类（物化生）',
+        score: 630,
+        userRank: null,
+        interests: ['编程计算机', '数据统计分析'],
+        targetMajor: '计算机',
+        cityPreference: ['广州', '深圳'],
+        familyResources: [],
+        awayPreference: '支持',
+        extra: '',
+      };
+      
+      // 创建分析器（需要先加载analyzer.js）
+      if (typeof GaoKaoAnalyzer === 'undefined') {
+        testDiv.innerHTML = '<p class="error">❌ GaoKaoAnalyzer 类未定义（需要加载 analyzer.js）</p>';
+        return;
+      }
+      
+      const analyzer = new GaoKaoAnalyzer(userData);
+      const result = analyzer.analyze();
+      
+      testDiv.innerHTML = `
+        <p class="success">✅ 分析成功!</p>
+        <p class="info">分数: ${result.userProfile.score}</p>
+        <p class="info">位次: ${result.rankInfo.rank}</p>
+        <p class="info">冲志愿数: ${result.collegeList.chong.length}</p>
+        <p class="info">稳志愿数: ${result.collegeList.wen.length}</p>
+        <p class="info">保志愿数: ${result.collegeList.bao.length}</p>
+      `;
+    } catch (error) {
+      testDiv.innerHTML = '<p class="error">❌ 测试失败: ' + error.message + '</p>';
+      console.error(error);
+    }
+  };
+  
+</script>
+
+<script src="js/analyzer.js"></script>
+<script>
+  // analyzer.js 加载完后再检查
+  setTimeout(() => {
+    const statusDiv = document.getElementById('status');
+    if (typeof GaoKaoAnalyzer !== 'undefined') {
+      statusDiv.innerHTML += '<p class="success">✅ GaoKaoAnalyzer 已加载</p>';
+    } else {
+      statusDiv.innerHTML += '<p class="error">❌ GaoKaoAnalyzer 未定义</p>';
+    }
+  }, 500);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简单测试</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+    button { width: 100%; padding: 12px; background: #1890ff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    button:hover { background: #40a9ff; }
+    button:disabled { background: #bfbfbf; cursor: not-allowed; }
+    .result { margin-top: 30px; padding: 20px; background: #f0f2f5; border-radius: 5px; display: none; }
+    .result.show { display: block; }
+    .result h3 { color: #1890ff; margin-bottom: 10px; }
+    .result p { margin: 8px 0; color: #666; }
+    .error { color: red; }
+    .success { color: green; }
+    .loading { text-align: center; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #1890ff; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎓 简单测试 - 验证系统是否工作</h1>
+  
+  <form onsubmit="handleSubmit(event)">
+    <div class="form-group">
+      <label for="score">📊 高考分数 *</label>
+      <input type="number" id="score" min="200" max="750" placeholder="例如：630" required />
+    </div>
+    
+    <div class="form-group">
+      <label for="province">🗺️ 所在省份 *</label>
+      <select id="province" required>
+        <option value="">--选择--</option>
+        <option value="广东">广东</option>
+        <option value="北京">北京</option>
+        <option value="上海">上海</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="subject">📚 选科组合 *</label>
+      <select id="subject" required>
+        <option value="">--选择--</option>
+        <option value="物理类（物化生）">物理类（物化生）</option>
+        <option value="历史类">历史类</option>
+      </select>
+    </div>
+    
+    <button type="submit" id="submitBtn">生成报告</button>
+  </form>
+  
+  <div class="result" id="result">
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<script src="data/colleges.js"></script>
+<script src="js/analyzer.js"></script>
+
+<script>
+async function handleSubmit(event) {
+  event.preventDefault();
+  
+  const btn = document.getElementById('submitBtn');
+  const resultDiv = document.getElementById('result');
+  const resultContent = document.getElementById('resultContent');
+  
+  // 禁用按钮并显示加载状态
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 正在分析...';
+  resultDiv.classList.add('show');
+  resultContent.innerHTML = '<div class="loading"><span class="spinner"></span> 正在处理...</div>';
+  
+  try {
+    // 收集数据
+    const score = parseInt(document.getElementById('score').value);
+    const province = document.getElementById('province').value;
+    const subject = document.getElementById('subject').value;
+    
+    if (!score || score < 200 || score > 750) {
+      throw new Error('分数必须在200-750之间');
+    }
+    
+    // 检查必要的数据
+    if (typeof COLLEGES === 'undefined') {
+      throw new Error('COLLEGES 未加载');
+    }
+    if (typeof GaoKaoAnalyzer === 'undefined') {
+      throw new Error('GaoKaoAnalyzer 未加载');
+    }
+    
+    console.log('✅ 数据准备完毕');
+    console.log('COLLEGES 数量:', COLLEGES.length);
+    console.log('用户分数:', score);
+    
+    // 创建用户数据
+    const userData = {
+      name: '测试学生',
+      gender: '女',
+      province: province,
+      subject: subject,
+      score: score,
+      userRank: null,
+      interests: ['编程计算机'],
+      targetMajor: '计算机',
+      cityPreference: ['广州'],
+      familyResources: [],
+      awayPreference: '支持',
+      extra: '',
+    };
+    
+    console.log('📝 创建分析器...');
+    const analyzer = new GaoKaoAnalyzer(userData);
+    
+    console.log('🔍 执行分析...');
+    const result = analyzer.analyze();
+    
+    console.log('✅ 分析完成');
+    console.log('位次:', result.rankInfo.rank);
+    console.log('分数层级:', result.scoreLevel.label);
+    
+    // 显示结果
+    let html = `
+      <h3>✅ 分析成功!</h3>
+      <p><strong>分数:</strong> ${result.userProfile.score}分</p>
+      <p><strong>全省位次（估算）:</strong> 约第 ${result.rankInfo.rank?.toLocaleString()} 名</p>
+      <p><strong>分数层级:</strong> ${result.scoreLevel.label}</p>
+      <p><strong>百分位:</strong> 超过全省 ${result.rankInfo.percentile}% 的考生</p>
+      <p><strong>推荐专业:</strong> ${result.recommendedMajors.map(m => m.name).join(', ')}</p>
+      <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+      <p><strong>冲志愿推荐:</strong> ${result.collegeList.chong.length} 所</p>
+      <p><strong>稳志愿推荐:</strong> ${result.collegeList.wen.length} 所</p>
+      <p><strong>保志愿推荐:</strong> ${result.collegeList.bao.length} 所</p>
+      <p style="margin-top: 15px; color: green;"><strong>🎉 系统工作正常!</strong></p>
+    `;
+    
+    resultContent.innerHTML = html;
+    
+  } catch (error) {
+    console.error('❌ 错误:', error);
+    resultContent.innerHTML = `
+      <h3 class="error">❌ 出错了</h3>
+      <p class="error"><strong>错误信息:</strong></p>
+      <p>${error.message}</p>
+      <p style="margin-top: 15px; font-size: 12px; color: #999;">
+        请在浏览器开发者工具（F12）的控制台中查看更多信息
+      </p>
+    `;
+  } finally {
+    // 恢复按钮
+    btn.disabled = false;
+    btn.innerHTML = '生成报告';
+  }
+}
+</script>
+
+</body>
+</html>

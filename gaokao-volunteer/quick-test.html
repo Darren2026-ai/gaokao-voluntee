@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>快速测试</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .info { background: #d4edda; padding: 15px; border-radius: 4px; margin: 10px 0; }
+    .error { background: #f8d7da; padding: 15px; border-radius: 4px; margin: 10px 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<h1>🧪 快速系统检查</h1>
+
+<div class="info">
+  <h3>检查项目：</h3>
+  <ul>
+    <li>✅ HTML 是否加载</li>
+    <li>✅ 脚本是否加载</li>
+    <li>✅ 数据是否加载</li>
+    <li>✅ 关键函数是否存在</li>
+    <li>⏳ 完整流程测试 (需要手动)</li>
+  </ul>
+</div>
+
+<button onclick="checkAll()">运行检查 ▶️</button>
+
+<div id="result"></div>
+
+<hr style="margin: 30px 0;">
+
+<h2>系统页面预览</h2>
+<p>下方是完整的高考志愿系统，你可以手动进行测试：</p>
+
+<iframe src="index.html" style="width: 100%; height: 1000px; border: 1px solid #ddd;"></iframe>
+
+<script>
+function checkAll() {
+  const resultDiv = document.getElementById('result');
+  let html = '<h3>检查结果：</h3>';
+  
+  try {
+    // 创建一个隐藏的iframe来测试
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = 'index.html';
+    document.body.appendChild(iframe);
+    
+    iframe.onload = function() {
+      const frameWin = iframe.contentWindow;
+      const frameDoc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      // 延迟检查，等待脚本加载
+      setTimeout(() => {
+        let errors = [];
+        let successes = [];
+        
+        // 检查 COLLEGES
+        if (frameWin.COLLEGES && frameWin.COLLEGES.length > 0) {
+          successes.push(`✅ COLLEGES 数据加载成功 (${frameWin.COLLEGES.length} 所高校)`);
+        } else {
+          errors.push('❌ COLLEGES 未加载');
+        }
+        
+        // 检查 GaoKaoAnalyzer
+        if (frameWin.GaoKaoAnalyzer) {
+          successes.push('✅ GaoKaoAnalyzer 类加载成功');
+        } else {
+          errors.push('❌ GaoKaoAnalyzer 未加载');
+        }
+        
+        // 检查 ExamConverter
+        if (frameWin.ExamConverter) {
+          successes.push('✅ ExamConverter 类加载成功');
+        } else {
+          errors.push('❌ ExamConverter 未加载');
+        }
+        
+        // 检查 generateReport
+        if (frameWin.generateReport && typeof frameWin.generateReport === 'function') {
+          successes.push('✅ generateReport 函数加载成功');
+        } else {
+          errors.push('❌ generateReport 函数未加载');
+        }
+        
+        // 检查 GUANGDONG_2025_RANK_TABLE
+        if (frameWin.GUANGDONG_2025_RANK_TABLE && frameWin.GUANGDONG_2025_RANK_TABLE.length > 0) {
+          successes.push(`✅ GUANGDONG_2025_RANK_TABLE 加载成功 (${frameWin.GUANGDONG_2025_RANK_TABLE.length} 条数据)`);
+        } else {
+          errors.push('❌ GUANGDONG_2025_RANK_TABLE 未加载');
+        }
+        
+        // 检查 nextStep 和 prevStep
+        if (frameWin.nextStep && frameWin.prevStep) {
+          successes.push('✅ nextStep 和 prevStep 函数加载成功');
+        } else {
+          errors.push('❌ nextStep/prevStep 函数未加载');
+        }
+        
+        // 检查关键DOM元素
+        const step1 = frameDoc.getElementById('step-1');
+        const step7 = frameDoc.getElementById('step-7');
+        const submitBtn = frameDoc.querySelector('.btn-submit');
+        
+        if (step1 && step7) {
+          successes.push('✅ 所有 7 个步骤 DOM 元素都存在');
+        } else {
+          errors.push(`❌ 步骤 DOM 缺失 (step-1: ${!!step1}, step-7: ${!!step7})`);
+        }
+        
+        if (submitBtn) {
+          successes.push('✅ 生成报告按钮存在');
+        } else {
+          errors.push('❌ 生成报告按钮不存在');
+        }
+        
+        // 生成HTML
+        let resultHtml = '';
+        
+        if (successes.length > 0) {
+          resultHtml += '<div class="info">';
+          successes.forEach(s => resultHtml += `<div>${s}</div>`);
+          resultHtml += '</div>';
+        }
+        
+        if (errors.length > 0) {
+          resultHtml += '<div class="error">';
+          resultHtml += '<strong>错误：</strong>';
+          errors.forEach(e => resultHtml += `<div>${e}</div>`);
+          resultHtml += '</div>';
+        }
+        
+        if (errors.length === 0) {
+          resultHtml += '<div class="info"><h4>🎉 所有检查通过！系统正常运行。</h4></div>';
+        }
+        
+        document.getElementById('result').innerHTML = resultHtml;
+        
+      }, 2000);  // 等待2秒让脚本加载
+    };
+    
+  } catch (e) {
+    document.getElementById('result').innerHTML = `<div class="error">检查失败: ${e.message}</div>`;
+  }
+}
+</script>
+
+</body>
+</html>

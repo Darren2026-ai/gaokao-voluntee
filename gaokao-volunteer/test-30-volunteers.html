@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>30个志愿推荐测试</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; padding: 20px; }
+    h1 { color: #2c3e50; border-bottom: 2px solid #4F46E5; padding-bottom: 10px; }
+    .test-section { margin: 20px 0; }
+    .result { padding: 12px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #4F46E5; }
+    .success { background: #ecfdf5; border-left-color: #10B981; color: #065f46; }
+    .error { background: #fef2f2; border-left-color: #ef4444; color: #7f1d1d; }
+    .info { background: #f0f9ff; border-left-color: #0284c7; color: #0c2d6b; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f3f4f6; font-weight: 600; }
+    .count-badge { display: inline-block; background: #4F46E5; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; margin: 0 5px; }
+    .test-btn { background: #4F46E5; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .test-btn:hover { background: #4338ca; }
+    #test-output { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎓 30个志愿推荐系统测试</h1>
+    
+    <div class="test-section">
+      <h2>测试场景</h2>
+      <p>此测试模拟一个630分的学生，验证系统是否能推荐30个志愿（冲10+稳12+保8）</p>
+      <button class="test-btn" onclick="runTest()">▶ 开始测试</button>
+    </div>
+
+    <div id="test-output"></div>
+  </div>
+
+  <script src="./data/colleges.js"></script>
+  <script src="./js/analyzer.js"></script>
+  <script>
+    function runTest() {
+      const output = document.getElementById('test-output');
+      output.innerHTML = '<div class="info">⏳ 测试进行中...</div>';
+      
+      try {
+        // 测试数据：630分，大约位次8000
+        const testUser = {
+          name: '测试学生',
+          gender: 'female',
+          province: '广东',
+          subject: '物理',
+          score: 630,
+          userRank: 8000,
+          examType: '高考',
+          examYear: '2025',
+          interests: ['编程计算机', '数学逻辑分析'],
+          majorCategories: ['计算机', '电子信息', '数学类'],
+          targetMajor: '计算机',
+          priority: 'balanced',
+          cityPreference: ['广州', '深圳', '北京', '上海'],
+          familyResources: [],
+          awayPreference: '可接受',
+          acceptCooperate: true,
+          extra: '测试用例'
+        };
+
+        // 创建分析器
+        const analyzer = new GaoKaoAnalyzer(testUser);
+        const result = analyzer.analyze();
+        
+        let html = '<div class="test-section">';
+        html += '<h2>📊 分析结果概览</h2>';
+        
+        // 基本信息
+        html += `<div class="result success">
+          <strong>✅ 分析成功</strong><br/>
+          分数: ${testUser.score}分 | 位次: 第${testUser.userRank}名
+        </div>`;
+        
+        // 冲刺梯度
+        const chongCount = result.collegeList.chong.length;
+        html += `<div class="result ${chongCount >= 10 ? 'success' : 'error'}">
+          <strong>冲刺梯度 <span class="count-badge">${chongCount}/10</span></strong><br/>
+          ${chongCount >= 10 ? '✅ 冲刺志愿数量充足' : '❌ 冲刺志愿数量不足'}
+        </div>`;
+        
+        // 稳妥梯度
+        const wenCount = result.collegeList.wen.length;
+        html += `<div class="result ${wenCount >= 12 ? 'success' : 'error'}">
+          <strong>稳妥梯度 <span class="count-badge">${wenCount}/12</span></strong><br/>
+          ${wenCount >= 12 ? '✅ 稳妥志愿数量充足' : '❌ 稳妥志愿数量不足'}
+        </div>`;
+        
+        // 保底梯度
+        const baoCount = result.collegeList.bao.length;
+        html += `<div class="result ${baoCount >= 8 ? 'success' : 'error'}">
+          <strong>保底梯度 <span class="count-badge">${baoCount}/8</span></strong><br/>
+          ${baoCount >= 8 ? '✅ 保底志愿数量充足' : '❌ 保底志愿数量不足'}
+        </div>`;
+        
+        // 总志愿数
+        const totalCount = chongCount + wenCount + baoCount;
+        html += `<div class="result ${totalCount >= 30 ? 'success' : 'error'}">
+          <strong>总志愿数 <span class="count-badge">${totalCount}/30</span></strong><br/>
+          ${totalCount >= 30 ? '✅ 系统推荐30个完整志愿' : '⚠️ 总志愿数不足30个'}
+        </div>`;
+        
+        // 冲刺志愿明细
+        if (result.collegeList.chong.length > 0) {
+          html += '<h3>🚀 冲刺志愿（1-10）</h3>';
+          html += '<table>';
+          html += '<tr><th>#</th><th>院校</th><th>城市</th><th>最低分</th><th>录取概率</th></tr>';
+          result.collegeList.chong.slice(0, 10).forEach((v, i) => {
+            html += `<tr>
+              <td>${i+1}</td>
+              <td>${v.collegeName}</td>
+              <td>${v.city}</td>
+              <td>${v.minScore}分</td>
+              <td>${v.admitProb}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        }
+        
+        // 稳妥志愿明细
+        if (result.collegeList.wen.length > 0) {
+          html += '<h3>✅ 稳妥志愿（11-22）</h3>';
+          html += '<table>';
+          html += '<tr><th>#</th><th>院校</th><th>城市</th><th>最低分</th><th>录取概率</th></tr>';
+          result.collegeList.wen.slice(0, 12).forEach((v, i) => {
+            html += `<tr>
+              <td>${10+i+1}</td>
+              <td>${v.collegeName}</td>
+              <td>${v.city}</td>
+              <td>${v.minScore}分</td>
+              <td>${v.admitProb}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        }
+        
+        // 保底志愿明细
+        if (result.collegeList.bao.length > 0) {
+          html += '<h3>🛡️ 保底志愿（23-30）</h3>';
+          html += '<table>';
+          html += '<tr><th>#</th><th>院校</th><th>城市</th><th>最低分</th><th>录取概率</th></tr>';
+          result.collegeList.bao.slice(0, 8).forEach((v, i) => {
+            html += `<tr>
+              <td>${22+i+1}</td>
+              <td>${v.collegeName}</td>
+              <td>${v.city}</td>
+              <td>${v.minScore}分</td>
+              <td>${v.admitProb}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        }
+        
+        html += '</div>';
+        output.innerHTML = html;
+        
+      } catch (error) {
+        output.innerHTML = `<div class="result error">
+          <strong>❌ 测试失败</strong><br/>
+          错误: ${error.message}<br/>
+          <pre>${error.stack}</pre>
+        </div>`;
+      }
+    }
+  </script>
+</body>
+</html>

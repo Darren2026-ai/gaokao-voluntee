@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>自动化测试 - 完整报告</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #f5f5f5; padding: 20px; }
+    .test-banner { background: #4F46E5; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+    .test-button { padding: 15px 30px; font-size: 16px; background: #10B981; cursor: pointer; border: none; border-radius: 6px; color: white; margin: 10px; }
+    .report-area { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="test-banner">
+    <h1>🧪 完整报告自动化测试</h1>
+    <p>点击按钮生成完整的高考志愿分析报告</p>
+  </div>
+  
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button class="test-button" onclick="generateFullReport()">生成完整报告</button>
+    <button class="test-button" onclick="location.reload()">重置</button>
+  </div>
+  
+  <div class="report-area">
+    <div id="reportOutput"></div>
+  </div>
+
+  <script src="data/colleges.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    function generateFullReport() {
+      const userData = {
+        name: '张三',
+        gender: '女',
+        province: '广东',
+        score: 600,
+        subject: '物理类（物化生）',
+        interests: ['I', 'R'],
+        targetMajor: '计算机',
+        cityPreference: ['深圳', '杭州'],
+        priority: 'balanced'
+      };
+
+      try {
+        const analyzer = new GaoKaoAnalyzer(userData);
+        const data = analyzer.analyze();
+        const html = renderReport(userData, data);
+        
+        document.getElementById('reportOutput').innerHTML = html;
+        
+        // 初始化雷达图
+        setTimeout(() => renderHollandChart(data.hollandType), 500);
+        
+        console.log('✅ 报告生成成功');
+        console.log('包含的数据:', {
+          collegeList: data.collegeList,
+          recommendedMajors: data.recommendedMajors?.length,
+          cityStrategy: data.cityStrategy?.length,
+          industryTrends: data.industryTrends?.length
+        });
+        
+      } catch (e) {
+        document.getElementById('reportOutput').innerHTML = `<div style="padding:20px; color:red"><strong>❌ 错误:</strong> ${e.message}<br/><pre>${e.stack}</pre></div>`;
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>高考志愿填报智能分析系统</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Chart.js for 雷达图 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ========== 顶部导航 ========== -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🎓</span>
+      <div>
+        <div class="logo-title">高考志愿智能分析</div>
+        <div class="logo-sub">六维度精准填报 · 2025年真实数据</div>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-btn active" onclick="showPage('survey')">📝 填报分析</button>
+      <button class="nav-btn" onclick="showPage('converter')">📊 考试换算</button>
+      <button class="nav-btn" onclick="showPage('report')" id="reportNavBtn" style="display:none">📋 查看报告</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ========== 主容器 ========== -->
+<main class="main">
+
+  <!-- ===== 问卷填写页面 ===== -->
+  <div id="page-survey" class="page active">
+    <div class="survey-container">
+
+      <!-- 进度条 -->
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">第 1 步 / 共 7 步</div>
+      </div>
+
+      <!-- ---- Step 1: 基本信息 ---- -->
+      <div class="step-card active" id="step-1">
+        <div class="step-header">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-title">基本信息</div>
+            <div class="step-desc">了解你的基本情况，是分析的第一步</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-item">
+            <label>👤 姓名（可不填）</label>
+            <input type="text" id="f-name" placeholder="例如：小明 / 匿名" />
+          </div>
+          <div class="form-item">
+            <label>⚧️ 性别</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="gender" value="女" checked> 女生</label>
+              <label class="radio-label"><input type="radio" name="gender" value="男"> 男生</label>
+            </div>
+          </div>
+          <div class="form-item">
+            <label>🗺️ 所在省份</label>
+            <select id="f-province">
+              <option value="广东">广东省</option>
+              <option value="北京">北京市</option>
+              <option value="上海">上海市</option>
+              <option value="江苏">江苏省</option>
+              <option value="浙江">浙江省</option>
+              <option value="湖北">湖北省</option>
+              <option value="四川">四川省</option>
+              <option value="其他">其他省份</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>📚 选科组合</label>
+            <select id="f-subject">
+              <optgroup label="🔬 物理类">
+                <option value="物理类（物化生）">物理类（物化生）- 理科经典组合</option>
+                <option value="物理类（物化政）">物理类（物化政）- 文理兼修</option>
+                <option value="物理类（物化地）">物理类（物化地）- 文理兼修</option>
+                <option value="物理类（物生地）">物理类（物生地）- 文理兼修</option>
+                <option value="物理类（其他组合）">物理类（其他组合）</option>
+              </optgroup>
+              <optgroup label="📖 历史类">
+                <option value="历史类（史生地）">历史类（史生地）</option>
+                <option value="历史类（史政地）">历史类（史政地）</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+        <div class="step-btn-row">
+          <div></div>
+          <button class="btn-next" onclick="nextStep(1)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 2: 分数信息 ---- -->
+      <div class="step-card" id="step-2">
+        <div class="step-header">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-title">成绩信息</div>
+            <div class="step-desc">填入你的高考分数或重要考试成绩</div>
+          </div>
+        </div>
+        <div class="score-type-toggle">
+          <button class="toggle-btn active" id="btn-gaokao" onclick="switchScoreType('gaokao')">🏆 高考成绩</button>
+          <button class="toggle-btn" id="btn-mock" onclick="switchScoreType('mock')">📝 模拟考成绩</button>
+        </div>
+
+        <!-- 高考成绩输入 -->
+        <div id="score-gaokao" class="score-section">
+          <div class="form-grid">
+            <div class="form-item form-item-wide">
+              <label>📊 高考总分</label>
+              <div class="score-input-wrap">
+                <input type="number" id="f-score" placeholder="例如：630" min="200" max="750" oninput="updateScorePreview()" />
+                <span class="score-unit">分</span>
+              </div>
+              <div id="scorePreview" class="score-preview"></div>
+            </div>
+            <div class="form-item form-item-wide">
+              <label>📈 全省位次（选填，更精准）</label>
+              <div class="score-input-wrap">
+                <input type="number" id="f-rank" placeholder="例如：8500" min="1" />
+                <span class="score-unit">名</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模拟考成绩输入 -->
+        <div id="score-mock" class="score-section" style="display:none">
+          <div class="form-grid">
+            <div class="form-item">
+              <label>📋 考试类型</label>
+              <select id="f-exam-type" onchange="updateMockPreview()">
+                <option value="深圳一模">深圳一模</option>
+                <option value="深圳二模">深圳二模</option>
+                <option value="广州一模">广州一模</option>
+                <option value="广州二模">广州二模</option>
+                <option value="百日冲刺联考">百日冲刺联考</option>
+                <option value="其他大型模拟考">其他大型模拟考</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label>📅 考试年份</label>
+              <select id="f-exam-year" onchange="updateMockPreview()">
+                <option value="2026">2026届（高三）</option>
+                <option value="2025">2025届（高三）</option>
+                <option value="2024">2024届（高三）</option>
+                <option value="2023">2023届（高三）</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label>📊 考试分数</label>
+              <div class="score-input-wrap">
+                <input type="number" id="f-mock-score" placeholder="例如：620" min="200" max="750" oninput="updateMockPreview()" />
+                <span class="score-unit">分</span>
+              </div>
+            </div>
+            <div class="form-item">
+              <label>🏆 全市名次（选填）</label>
+              <div class="score-input-wrap">
+                <input type="number" id="f-mock-rank" placeholder="例如：1800" min="1" oninput="updateMockPreview()" />
+                <span class="score-unit">名</span>
+              </div>
+            </div>
+            <div class="form-item">
+              <label>📈 全市考生总数（选填）</label>
+              <div class="score-input-wrap">
+                <input type="number" id="f-total-students" placeholder="例如：45000" min="1000" oninput="updateMockPreview()" />
+                <span class="score-unit">人</span>
+              </div>
+            </div>
+          </div>
+          <div id="mockPreview" class="mock-preview-card" style="display:none"></div>
+          <div class="tip-box">
+            💡 模拟考成绩仅供初步定位参考，实际高考分数会有波动，建议同时结合几次考试综合评估<br>
+            💡 填写全市名次和考生总数，可以更精准地换算为全省位次
+          </div>
+        </div>
+
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(2)">← 上一步</button>
+          <button class="btn-next" onclick="nextStep(2)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 3: 兴趣与性格 ---- -->
+      <div class="step-card" id="step-3">
+        <div class="step-header">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-title">兴趣与性格</div>
+            <div class="step-desc">告诉我你的兴趣和关注的专业，帮你找到真正适合的方向（可多选）</div>
+          </div>
+        </div>
+
+        <!-- 第一部分：霍兰德职业兴趣 -->
+        <div style="margin-bottom: 30px;">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px; color: #333;">
+            🎯 你的职业兴趣（霍兰德职业兴趣测试）
+          </div>
+          <div class="interest-grid" id="interestGrid">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+
+        <!-- 第二部分：具体专业大类 -->
+        <div style="margin-bottom: 25px;">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px; color: #333;">
+            📚 感兴趣的专业方向（可直接选择）
+          </div>
+          <div class="major-grid" id="majorGrid">
+            <!-- 动态生成 -->
+          </div>
+          <div style="font-size: 12px; color: #999; margin-top: 12px; line-height: 1.5;">
+            💡 <span style="color: #ff6b6b;">红色星标</span>表示当前国家重点扶持的朝阳产业，就业前景好。可根据成绩和兴趣灵活选择。
+          </div>
+        </div>
+
+        <!-- 直接输入目标专业 -->
+        <div class="form-item" style="margin-top:20px">
+          <label>🎯 目标专业方向（可直接填写）</label>
+          <input type="text" id="f-target-major" placeholder="例如：师范专业、数学、生物、计算机、不确定..." />
+        </div>
+
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(3)">← 上一步</button>
+          <button class="btn-next" onclick="nextStep(3)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 4: 城市与地域 ---- -->
+      <div class="step-card" id="step-4">
+        <div class="step-header">
+          <div class="step-num">04</div>
+          <div>
+            <div class="step-title">城市选择</div>
+            <div class="step-desc">城市选择影响实习、就业和生活，认真考虑</div>
+          </div>
+        </div>
+        <div class="city-grid" id="cityGrid">
+          <!-- 动态生成 -->
+        </div>
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(4)">← 上一步</button>
+          <button class="btn-next" onclick="nextStep(4)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 5: 志愿优先级（新增） ---- -->
+      <div class="step-card" id="step-5">
+        <div class="step-header">
+          <div class="step-num">05</div>
+          <div>
+            <div class="step-title">志愿优先级</div>
+            <div class="step-desc">选择填报志愿时的优先考虑因素（影响院校推荐排序）</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 25px;">
+          <div style="font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.6;">
+            💡 不同的优先级选择会影响推荐的院校顺序和策略。选择最符合你想法的一个：
+          </div>
+
+          <div class="priority-options">
+            <!-- 城市优先 -->
+            <div class="priority-card" onclick="selectPriority(this, 'city')">
+              <div class="priority-radio"></div>
+              <div class="priority-content">
+                <div class="priority-title">🏙️ 城市优先</div>
+                <div class="priority-desc">优先考虑去一线/新一线城市（北上广深杭武等），看重城市发展机遇和生活质量</div>
+                <div class="priority-tags">
+                  <span class="tag">适合：重视平台和视野</span>
+                  <span class="tag">特点：985/211皆可</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 学校优先 -->
+            <div class="priority-card" onclick="selectPriority(this, 'school')">
+              <div class="priority-radio"></div>
+              <div class="priority-content">
+                <div class="priority-title">🎓 学校优先</div>
+                <div class="priority-desc">优先考虑上985/211等名校，看重校友资源、学校品牌和深造机会</div>
+                <div class="priority-tags">
+                  <span class="tag">适合：重视学历和资源</span>
+                  <span class="tag">特点：985优先</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 专业优先 -->
+            <div class="priority-card" onclick="selectPriority(this, 'major')">
+              <div class="priority-radio"></div>
+              <div class="priority-content">
+                <div class="priority-title">📚 专业优先</div>
+                <div class="priority-desc">优先考虑学校有强势学科，即使排名较后也要进对的专业和学科</div>
+                <div class="priority-tags">
+                  <span class="tag">适合：明确职业方向</span>
+                  <span class="tag">特点：专业实力强</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 平衡选择 -->
+            <div class="priority-card" onclick="selectPriority(this, 'balanced')">
+              <div class="priority-radio"></div>
+              <div class="priority-content">
+                <div class="priority-title">⚖️ 平衡选择</div>
+                <div class="priority-desc">在保证分数匹配的前提下，综合考虑城市、学校、专业三个因素（推荐首选）</div>
+                <div class="priority-tags">
+                  <span class="tag">适合：综合考虑</span>
+                  <span class="tag">特点：风险最低</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; padding: 15px; background: #F0F8FF; border-radius: 8px; border-left: 4px solid #0066CC;">
+            <div style="font-size: 13px; color: #333; line-height: 1.6;">
+              <strong>💡 小提示：</strong><br>
+              • 如果你分数和位次都不确定，建议选择"平衡选择"<br>
+              • 选定后可根据报告中的"冲稳保"方案灵活调整<br>
+              • 591分进985/211都有机会，关键是选对专业和学校组合
+            </div>
+          </div>
+        </div>
+
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(5)">← 上一步</button>
+          <button class="btn-next" onclick="nextStep(5)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 6: 家庭与资源 ---- -->
+      <div class="step-card" id="step-6">
+        <div class="step-header">
+          <div class="step-num">06</div>
+          <div>
+            <div class="step-title">家庭资源与其他情况</div>
+            <div class="step-desc">家庭背景影响专业选择的实际价值，诚实填写更准确</div>
+          </div>
+        </div>
+        <div class="form-item">
+          <label>👨‍👩‍👧 家庭职业资源（可多选）</label>
+          <div class="check-grid" id="familyGrid"></div>
+        </div>
+        <div class="form-item" style="margin-top:20px">
+          <label>💰 家庭对于离家就读的态度</label>
+          <div class="radio-group">
+            <label class="radio-label"><input type="radio" name="away" value="支持" checked> 支持，越远越好</label>
+            <label class="radio-label"><input type="radio" name="away" value="省内"> 最好省内</label>
+            <label class="radio-label"><input type="radio" name="away" value="市内"> 最好本市附近</label>
+          </div>
+        </div>
+        <div class="form-item" style="margin-top:20px">
+          <label>🌍 中外合作专业</label>
+          <div class="radio-group">
+            <label class="radio-label"><input type="checkbox" id="f-cooperate" checked> 愿意参加中外合作专业（学费较高，但教学国际化）</label>
+          </div>
+        </div>
+        <div class="form-item" style="margin-top:20px">
+          <label>📝 补充说明（选填）</label>
+          <textarea id="f-extra" rows="3" placeholder="例如：家里有亲戚是医生，想走医学路线 / 父母希望稳定工作 / 想出国留学..."></textarea>
+        </div>
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(6)">← 上一步</button>
+          <button class="btn-next" onclick="nextStep(6)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- ---- Step 7: 确认提交 ---- -->
+      <div class="step-card" id="step-7">
+        <div class="step-header">
+          <div class="step-num">07</div>
+          <div>
+            <div class="step-title">确认信息</div>
+            <div class="step-desc">检查一下填写的信息，确认无误后生成报告</div>
+          </div>
+        </div>
+        <div class="confirm-grid" id="confirmGrid"></div>
+        <div class="submit-area">
+          <button class="btn-submit" onclick="generateReport()">
+            <span class="btn-icon">🔍</span> 生成我的志愿填报报告
+          </button>
+          <div class="submit-hint">报告将根据2025年真实录取数据进行分析</div>
+        </div>
+        <div class="step-btn-row">
+          <button class="btn-prev" onclick="prevStep(7)">← 上一步</button>
+          <div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 考试换算页面 ===== -->
+  <div id="page-converter" class="page">
+    <div class="converter-container">
+      <div class="section-title-big">📊 模拟考试 → 高考分数换算</div>
+      <div class="section-subtitle">根据深圳一模、广州一模等历年数据，预估高考分数区间</div>
+
+      <div class="converter-card">
+        <div class="form-grid">
+          <div class="form-item">
+            <label>📋 考试类型</label>
+            <select id="cv-exam-type" onchange="updateConverter()">
+              <option value="深圳一模">深圳一模</option>
+              <option value="深圳二模">深圳二模</option>
+              <option value="广州一模">广州一模</option>
+              <option value="广州二模">广州二模</option>
+              <option value="百日冲刺联考">百日冲刺联考</option>
+              <option value="其他大型模拟考">其他大型模拟考</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>📅 考试年份</label>
+            <select id="cv-exam-year" onchange="updateConverter()">
+              <option value="2026">2026届（高三）</option>
+              <option value="2025">2025届（高三）</option>
+              <option value="2024">2024届（高三）</option>
+              <option value="2023">2023届（高三）</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>📚 选科类型</label>
+            <select id="cv-subject" onchange="updateConverter()">
+              <option value="物理类">物理类</option>
+              <option value="历史类">历史类（参考物理类换算）</option>
+            </select>
+          </div>
+          <div class="form-item form-item-wide">
+            <label>📊 模拟考分数</label>
+            <div class="score-input-wrap">
+              <input type="number" id="cv-score" placeholder="输入分数" min="200" max="750" oninput="updateConverter()" />
+              <span class="score-unit">分</span>
+            </div>
+          </div>
+          <div class="form-item">
+            <label>🏆 全市名次（选填）</label>
+            <div class="score-input-wrap">
+              <input type="number" id="cv-rank" placeholder="例如：1800" min="1" oninput="updateConverter()" />
+              <span class="score-unit">名</span>
+            </div>
+          </div>
+          <div class="form-item">
+            <label>📈 全市考生总数（选填）</label>
+            <div class="score-input-wrap">
+              <input type="number" id="cv-total" placeholder="例如：45000" min="1000" oninput="updateConverter()" />
+              <span class="score-unit">人</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="converter-result" class="converter-result" style="display:none">
+          <!-- 动态生成 -->
+        </div>
+
+        <div class="converter-note">
+          <div class="note-title">📌 换算说明</div>
+          <ul>
+            <li>深圳一模通常比高考难，换算时需综合考虑，预估高考分数通常高于一模分数</li>
+            <li>换算结果仅供初步定位参考，实际高考成绩受临场发挥、试题难度等多种因素影响</li>
+            <li>建议结合多次模拟考试（一模、二模、三模）综合评估，取中间值参考</li>
+            <li>强烈建议以高考实际分数为最终依据</li>
+          </ul>
+        </div>
+
+        <!-- 历年换算趋势说明 -->
+        <div class="trend-table">
+          <div class="note-title">📈 深圳一模历年换算参考（物理类）</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>深圳一模分数</th><th>预估高考分数</th><th>对应院校层次</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>660+</td><td>663+</td><td>985顶尖院校竞争段</td></tr>
+              <tr><td>640-660</td><td>641-663</td><td>985院校稳妥段</td></tr>
+              <tr><td>620-640</td><td>620-641</td><td>985/211冲击段</td></tr>
+              <tr><td>600-620</td><td>601-620</td><td>211优质段</td></tr>
+              <tr><td>580-600</td><td>578-601</td><td>211/一本优质段</td></tr>
+              <tr><td>560-580</td><td>554-578</td><td>一本录取段</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="converter-cta">
+        <button class="btn-next" onclick="showPage('survey')">📝 去填写志愿分析问卷</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 报告页面 ===== -->
+  <div id="page-report" class="page">
+    <div id="reportContent"></div>
+  </div>
+
+</main>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer">
+  <div class="footer-inner">
+    数据基于2025年广东高考真实录取情况 · 仅供参考，请以当年官方数据为准 · 建议填报前核实最新招生章程
+  </div>
+</footer>
+
+<!-- 引入脚本 -->
+<script src="data/colleges.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/app.js"></script>
+
+<!-- 调试脚本 -->
+<script>
+  // 在生成报告按钮上添加调试日志
+  window.addEventListener('load', () => {
+    const submitBtn = document.querySelector('.btn-submit');
+    if (submitBtn) {
+      // 保存原始的 onclick
+      const originalOnClick = submitBtn.onclick;
+      
+      // 添加点击事件监听器
+      submitBtn.addEventListener('click', (e) => {
+        console.log('✅ 按钮点击事件触发！');
+        console.log('generateReport 函数类型:', typeof generateReport);
+        console.log('COLLEGES 数据:', typeof COLLEGES, COLLEGES?.length);
+        console.log('GaoKaoAnalyzer 类:', typeof GaoKaoAnalyzer);
+      });
+      
+      console.log('✅ 调试脚本已加载，按钮事件监听器已绑定');
+    } else {
+      console.log('❌ 未找到 .btn-submit 按钮');
+    }
+  });
+</script>
+</body>
+</html>

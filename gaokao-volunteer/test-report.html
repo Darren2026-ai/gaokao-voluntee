@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>直接测试报告生成</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    body { padding: 20px; background: #f5f5f5; }
+    .test-btn { padding: 10px 20px; margin: 10px 0; background: #4F46E5; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+    .ok { background: #D1FAE5; color: #065F46; }
+    .error { background: #FEE2E2; color: #EF4444; }
+  </style>
+</head>
+<body>
+  <h1>报告生成测试</h1>
+  <button class="test-btn" onclick="testReport()">生成报告</button>
+  <button class="test-btn" onclick="clearReport()">清除</button>
+  <div id="status"></div>
+  <div id="report"></div>
+
+  <script src="data/colleges.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    function addStatus(msg, type = 'ok') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = msg;
+      document.getElementById('status').appendChild(div);
+    }
+
+    function testReport() {
+      document.getElementById('status').innerHTML = '';
+      document.getElementById('report').innerHTML = '';
+      
+      try {
+        addStatus('✓ COLLEGES 已加载: ' + (COLLEGES?.length || 0) + ' 所', 'ok');
+        
+        const userData = {
+          name: '李明',
+          gender: '男',
+          province: '广东',
+          score: 600,
+          subject: '物理类（物化生）',
+          interests: ['I', 'R'],
+          targetMajor: '计算机',
+          cityPreference: ['杭州', '深圳'],
+          priority: 'balanced'
+        };
+        
+        addStatus('✓ 模拟用户数据创建完成', 'ok');
+        
+        const analyzer = new GaoKaoAnalyzer(userData);
+        addStatus('✓ 分析器创建完成', 'ok');
+        
+        const result = analyzer.analyze();
+        addStatus('✓ 分析完成', 'ok');
+        addStatus(`  - 冲刺: ${result.collegeList.chong?.length || 0} 所`, 'ok');
+        addStatus(`  - 稳妥: ${result.collegeList.wen?.length || 0} 所`, 'ok');
+        addStatus(`  - 保底: ${result.collegeList.bao?.length || 0} 所`, 'ok');
+        
+        const html = renderReport(userData, result);
+        document.getElementById('report').innerHTML = html;
+        addStatus('✓ 报告渲染完成！', 'ok');
+        
+        // 检查报告中是否包含院校卡片
+        const hasCollege = html.includes('college-card');
+        addStatus(`  - 包含院校卡片: ${hasCollege ? '✓' : '✗'}`, hasCollege ? 'ok' : 'error');
+        
+      } catch (e) {
+        addStatus(`❌ 错误: ${e.message}`, 'error');
+        addStatus(e.stack, 'error');
+      }
+    }
+
+    function clearReport() {
+      document.getElementById('report').innerHTML = '';
+      document.getElementById('status').innerHTML = '';
+    }
+  </script>
+</body>
+</html>

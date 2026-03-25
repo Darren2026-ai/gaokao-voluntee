@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>最小化测试</title>
+</head>
+<body style="font-family: Arial; padding: 20px;">
+
+<h1>系统检查</h1>
+<p id="log" style="white-space: pre-wrap; background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto;"></p>
+
+<script>
+function log(msg) {
+  const p = document.getElementById('log');
+  p.textContent += msg + '\n';
+  console.log(msg);
+}
+
+log('🔍 开始检查...');
+
+// 检查加载
+setTimeout(() => {
+  log('\n=== 脚本加载检查 ===');
+  log('typeof COLLEGES: ' + typeof COLLEGES);
+  log('typeof GaoKaoAnalyzer: ' + typeof GaoKaoAnalyzer);
+  log('typeof GUANGDONG_2025_RANK_TABLE: ' + typeof GUANGDONG_2025_RANK_TABLE);
+  
+  if (typeof COLLEGES === 'undefined') {
+    log('❌ COLLEGES 未定义!');
+    return;
+  }
+  log('✅ COLLEGES 已定义，数量: ' + COLLEGES.length);
+  
+  if (typeof GaoKaoAnalyzer === 'undefined') {
+    log('❌ GaoKaoAnalyzer 未定义!');
+    return;
+  }
+  log('✅ GaoKaoAnalyzer 已定义');
+  
+  // 测试分析
+  log('\n=== 测试分析 ===');
+  try {
+    const analyzer = new GaoKaoAnalyzer({
+      score: 630,
+      interests: [],
+      cityPreference: [],
+      targetMajor: '',
+    });
+    const result = analyzer.analyze();
+    log('✅ 分析成功!');
+    log('   位次: ' + result.rankInfo.rank);
+    log('   分数层级: ' + result.scoreLevel.label);
+    log('   冲: ' + result.collegeList.chong.length + '所');
+    log('   稳: ' + result.collegeList.wen.length + '所');
+    log('   保: ' + result.collegeList.bao.length + '所');
+  } catch (e) {
+    log('❌ 分析失败: ' + e.message);
+    log('   ' + e.stack);
+  }
+}, 1000);
+</script>
+
+<script src="data/colleges.js"></script>
+<script src="js/analyzer.js"></script>
+
+</body>
+</html>

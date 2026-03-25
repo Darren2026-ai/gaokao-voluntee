@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>院校推荐调试工具</title>
+<style>
+body { font-family: sans-serif; padding: 20px; background:#f5f5f5; }
+.card { background:#fff; border-radius:8px; padding:16px; margin:12px 0; border-left:4px solid #4F46E5; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.ok { border-left-color: #10B981; }
+.warn { border-left-color: #F59E0B; }
+.err { border-left-color: #EF4444; }
+h3 { margin:0 0 8px; }
+pre { background:#f0f0f0; padding:10px; border-radius:4px; overflow:auto; font-size:12px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:700; margin:2px; }
+.b-chong { background:#FEE2E2; color:#EF4444; }
+.b-wen   { background:#FEF9C3; color:#B45309; }
+.b-bao   { background:#DCFCE7; color:#15803D; }
+button { padding:10px 20px; font-size:14px; cursor:pointer; background:#4F46E5; color:#fff; border:none; border-radius:6px; margin:4px; }
+button:hover { background:#4338CA; }
+#log { background:#1e1e1e; color:#ccc; padding:14px; border-radius:6px; font-size:12px; white-space:pre-wrap; height:200px; overflow:auto; }
+</style>
+</head>
+<body>
+<h1>🔍 院校推荐调试工具</h1>
+<div id="status"></div>
+<div style="margin:12px 0">
+  <label>分数：<input id="score" type="number" value="591" style="width:80px;padding:6px;margin:0 8px"/></label>
+  <label>位次(可留空自动计算)：<input id="rank" type="number" value="" style="width:100px;padding:6px;margin:0 8px"/></label>
+  <button onclick="runTest()">🚀 运行诊断</button>
+  <button onclick="document.getElementById('log').innerHTML=''">清空日志</button>
+</div>
+<div id="result"></div>
+<h3 style="margin-top:20px">控制台日志</h3>
+<div id="log"></div>
+
+<script>
+const logEl = document.getElementById('log');
+const origLog = console.log;
+const origWarn = console.warn;
+const origErr = console.error;
+function addLog(prefix, args) {
+  const line = prefix + Array.from(args).map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' ');
+  logEl.innerHTML += line + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+console.log = function() { origLog.apply(this, arguments); addLog('', arguments); };
+console.warn = function() { origWarn.apply(this, arguments); addLog('[WARN] ', arguments); };
+console.error = function() { origErr.apply(this, arguments); addLog('[ERR] ', arguments); };
+</script>
+
+<script src="data/colleges.js"></script>
+<script src="js/analyzer.js"></script>
+
+<script>
+function runTest() {
+  const scoreInput = parseInt(document.getElementById('score').value) || 591;
+  const rankInput = parseInt(document.getElementById('rank').value) || 0;
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+  resultEl.innerHTML = '';
+
+  // 1. 检查 COLLEGES
+  const section1 = document.createElement('div');
+  section1.className = 'card';
+  if (typeof COLLEGES !== 'undefined' && Array.isArray(COLLEGES) && COLLEGES.length > 0) {
+    section1.classList.add('ok');
+    let totalGroups = 0;
+    COLLEGES.forEach(c => { totalGroups += (c.groups || []).length; });
+    section1.innerHTML = `<h3>✅ 步骤1：COLLEGES 数据加载成功</h3>
+      <p>共 <strong>${COLLEGES.length}</strong> 所高校，<strong>${totalGroups}</strong> 个专业组</p>
+      <p>第1所：${COLLEGES[0].name} (${COLLEGES[0].level}) / 专业组数：${COLLEGES[0].groups?.length}</p>
+      <p>第1专业组字段：${COLLEGES[0].groups ? Object.keys(COLLEGES[0].groups[0]).join(', ') : '无'}</p>`;
+  } else {
+    section1.classList.add('err');
+    section1.innerHTML = `<h3>❌ 步骤1：COLLEGES 数据未加载！</h3>
+      <p>typeof COLLEGES = ${typeof COLLEGES}</p>`;
+  }
+  resultEl.appendChild(section1);
+
+  // 2. 运行分析
+  const userData = {
+    name: '测试同学',
+    score: scoreInput,
+    rank: rankInput || undefined,
+    province: '广东',
+    subject: '物理类（物化生）',
+    gender: '男',
+    interests: ['数学', '物理', '计算机'],
+    cityPreference: [],
+    familyResources: [],
+    targetMajor: '',
+    priority: 'balanced',
+    mockRank: null,
+    totalStudents: null
+  };
+
+  let analyzer, result;
+  try {
+    analyzer = new GaoKaoAnalyzer(userData);
+    result = analyzer.analyze();
+
+    const chongLen = result.collegeList?.chong?.length || 0;
+    const wenLen = result.collegeList?.wen?.length || 0;
+    const baoLen = result.collegeList?.bao?.length || 0;
+    const total = chongLen + wenLen + baoLen;
+
+    const section2 = document.createElement('div');
+    section2.className = 'card ' + (total >= 15 ? 'ok' : 'warn');
+    section2.innerHTML = `<h3>${total >= 15 ? '✅' : '⚠️'} 步骤2：分析结果</h3>
+      <p>分数：${scoreInput} | 估算位次：${result.rankInfo?.rank?.toLocaleString()}</p>
+      <p>院校推荐总数：<strong>${total}</strong>
+        <span class="badge b-chong">冲 ${chongLen}</span>
+        <span class="badge b-wen">稳 ${wenLen}</span>
+        <span class="badge b-bao">保 ${baoLen}</span>
+      </p>
+      ${total < 15 ? '<p style="color:#EF4444">⚠️ 不足15个，需要扩大筛选范围！</p>' : ''}`;
+    resultEl.appendChild(section2);
+
+    // 3. 展示具体院校
+    if (total > 0) {
+      const section3 = document.createElement('div');
+      section3.className = 'card ok';
+      section3.innerHTML = `<h3>✅ 步骤3：冲稳保院校详情</h3>`;
+      
+      ['chong', 'wen', 'bao'].forEach(type => {
+        const list = result.collegeList[type];
+        if (!list || list.length === 0) return;
+        const label = {chong:'🚀 冲刺', wen:'✅ 稳妥', bao:'🛡️ 保底'}[type];
+        const color = {chong:'#EF4444', wen:'#F59E0B', bao:'#10B981'}[type];
+        let html = `<div style="margin-top:12px"><strong style="color:${color}">${label}（${list.length}所）</strong></div>`;
+        list.forEach((c, i) => {
+          html += `<div style="padding:8px;margin:4px 0;background:#fafafa;border-radius:6px;font-size:13px;border:1px solid #eee">
+            <span style="color:${color};font-weight:700">${i+1}.</span>
+            <strong>${c.collegeName || c.name || '⚠️缺少名称'}</strong>
+            <span style="color:#6B7280;margin:0 6px">|</span>
+            专业组：<strong>${c.groupCode || '?'}组 · ${c.groupNote || c.groupName || '⚠️缺少组名'}</strong>
+            <span style="color:#6B7280;margin:0 6px">|</span>
+            最低分：${c.minScore} / 位次：${c.minRank?.toLocaleString()}
+            <span style="color:#6B7280;margin:0 6px">|</span>
+            概率：${c.admitProb}
+          </div>`;
+        });
+        section3.innerHTML += html;
+      });
+      resultEl.appendChild(section3);
+    } else {
+      const section3 = document.createElement('div');
+      section3.className = 'card err';
+      section3.innerHTML = `<h3>❌ 步骤3：院校列表为空</h3>
+        <p>分数：${scoreInput}，位次：${result.rankInfo?.rank}</p>
+        <p>请检查 adjustThresholds 中的阈值范围是否合理</p>
+        <pre>adjustThresholds(${scoreInput}, ${result.rankInfo?.rank}) = ${JSON.stringify(analyzer.adjustThresholds(scoreInput, result.rankInfo?.rank), null, 2)}</pre>`;
+      resultEl.appendChild(section3);
+    }
+
+  } catch(e) {
+    const section2 = document.createElement('div');
+    section2.className = 'card err';
+    section2.innerHTML = `<h3>❌ 分析出错</h3><pre>${e.stack || e.message}</pre>`;
+    resultEl.appendChild(section2);
+  }
+}
+
+// 页面加载后自动运行
+window.addEventListener('load', () => {
+  setTimeout(runTest, 500);
+});
+</script>
+</body>
+</html>

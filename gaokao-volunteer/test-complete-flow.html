@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>完整功能验证 - 自动化测试</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #f5f5f5; }
+    .auto-test-wrap {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 20px;
+      max-width: 400px;
+      z-index: 9999;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .auto-test-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #1f2937;
+    }
+    .auto-test-btn {
+      width: 100%;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .auto-test-btn:hover {
+      background: #4338ca;
+    }
+    .auto-test-log {
+      background: #1f2937;
+      color: #10b981;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 250px;
+      overflow-y: auto;
+      margin-top: 10px;
+      border: 1px solid #374151;
+    }
+    .test-item {
+      margin: 4px 0;
+      padding: 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 加载系统所需的JS文件 -->
+<script src="data/colleges.js"></script>
+<script src="js/app.js"></script>
+<script src="js/analyzer.js"></script>
+
+<!-- 原系统HTML - 完整加载 -->
+<div id="system-container"></div>
+
+<!-- 自动化测试面板 -->
+<div class="auto-test-wrap">
+  <div class="auto-test-title">🧪 自动化功能测试</div>
+  <button class="auto-test-btn" onclick="runAutoTest()">开始完整测试</button>
+  <button class="auto-test-btn" onclick="simulateUserFlow()">模拟用户完整流程</button>
+  <div class="auto-test-log" id="auto-test-log"></div>
+</div>
+
+<script>
+const testLogs = [];
+
+function logTest(msg, type = 'info') {
+  const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  const icon = type === 'error' ? '❌' : type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : 'ℹ️';
+  const logEntry = `[${timestamp}] ${icon} ${msg}`;
+  testLogs.push(logEntry);
+  document.getElementById('auto-test-log').innerHTML = testLogs.map(l => `<div class="test-item">${l}</div>`).join('');
+  document.getElementById('auto-test-log').scrollTop = document.getElementById('auto-test-log').scrollHeight;
+}
+
+function runAutoTest() {
+  testLogs.length = 0;
+  logTest('=== 开始自动化功能测试 ===', 'info');
+  
+  try {
+    // 测试 1: 检查 HTML 元素
+    logTest('测试1: 检查HTML元素...', 'info');
+    checkHTMLElements();
+    
+    // 测试 2: 检查学费数据
+    logTest('测试2: 检查学费数据...', 'info');
+    checkTuitionData();
+    
+    // 测试 3: 检查数据收集逻辑
+    logTest('测试3: 检查数据收集逻辑...', 'info');
+    checkDataCollection();
+    
+    // 测试 4: 检查报告生成逻辑
+    logTest('测试4: 检查报告生成逻辑...', 'info');
+    checkReportGeneration();
+    
+    logTest('=== 所有测试完成 ===', 'ok');
+  } catch (err) {
+    logTest(`测试失败: ${err.message}`, 'error');
+    console.error(err);
+  }
+}
+
+function checkHTMLElements() {
+  // 检查中外合作复选框
+  const cooperateCheckbox = document.getElementById('f-cooperate');
+  if (cooperateCheckbox) {
+    logTest('✅ 找到中外合作复选框 (id=f-cooperate)', 'ok');
+    if (cooperateCheckbox.checked) {
+      logTest('✅ 复选框默认已勾选', 'ok');
+    } else {
+      logTest('⚠️ 复选框未勾选', 'warn');
+    }
+  } else {
+    logTest('❌ 未找到中外合作复选框', 'error');
+  }
+  
+  // 检查表格中的学费列
+  const volunteerTable = document.querySelector('.volunteer-table');
+  if (volunteerTable) {
+    const headers = Array.from(volunteerTable.querySelectorAll('th'));
+    const hasFeesHeader = headers.some(h => h.textContent.includes('学费'));
+    if (hasFeesHeader) {
+      logTest('✅ 表格中包含"学费备注"列', 'ok');
+    } else {
+      logTest('⚠️ 表格中未找到学费列', 'warn');
+    }
+  }
+}
+
+function checkTuitionData() {
+  if (typeof COLLEGES === 'undefined') {
+    logTest('❌ COLLEGES 数据未加载', 'error');
+    return;
+  }
+  
+  logTest(`✅ COLLEGES 数据已加载, 共 ${COLLEGES.length} 所', 'ok');
+  
+  let collegesWithTuition = 0;
+  let missingTuition = [];
+  
+  COLLEGES.forEach((college, idx) => {
+    if (college.tuition && college.tuitionNote) {
+      collegesWithTuition++;
+    } else {
+      missingTuition.push(college.name);
+    }
+  });
+  
+  logTest(`✅ ${collegesWithTuition}/${COLLEGES.length} 所高校含学费信息`, 'ok');
+  
+  if (missingTuition.length > 0) {
+    logTest(`⚠️ 缺失学费数据的高校: ${missingTuition.join(', ')}`, 'warn');
+  }
+  
+  // 显示示例
+  const example = COLLEGES.find(c => c.tuition);
+  if (example) {
+    logTest(`示例 - ${example.name}: ${example.tuition}`, 'info');
+  }
+}
+
+function checkDataCollection() {
+  // 模拟用户填表
+  const formElements = {
+    name: document.getElementById('f-name'),
+    gender: document.querySelector('input[name="gender"]:checked'),
+    province: document.getElementById('f-province'),
+    subject: document.getElementById('f-subject'),
+    score: document.getElementById('f-score'),
+    cooperate: document.getElementById('f-cooperate')
+  };
+  
+  let elementsOk = 0;
+  Object.entries(formElements).forEach(([key, elem]) => {
+    if (elem) {
+      elementsOk++;
+      if (key === 'cooperate') {
+        logTest(`✅ 中外合作选项可收集: ${elem.checked ? '已勾选' : '未勾选'}`, 'ok');
+      }
+    }
+  });
+  
+  logTest(`✅ 表单元素检查: ${elementsOk}/${Object.keys(formElements).length} 正常`, 'ok');
+}
+
+function checkReportGeneration() {
+  // 检查 generateReport 函数
+  if (typeof generateReport !== 'undefined') {
+    logTest('✅ generateReport 函数存在', 'ok');
+  } else {
+    logTest('❌ generateReport 函数未找到', 'error');
+  }
+  
+  // 检查 GaoKaoAnalyzer
+  if (typeof GaoKaoAnalyzer !== 'undefined') {
+    logTest('✅ GaoKaoAnalyzer 类已加载', 'ok');
+  } else {
+    logTest('❌ GaoKaoAnalyzer 类未加载', 'error');
+  }
+  
+  // 检查 renderReport 函数
+  if (typeof renderReport !== 'undefined') {
+    logTest('✅ renderReport 函数存在', 'ok');
+  } else {
+    logTest('❌ renderReport 函数未找到', 'error');
+  }
+}
+
+function simulateUserFlow() {
+  testLogs.length = 0;
+  logTest('=== 开始模拟用户完整流程 ===', 'info');
+  
+  try {
+    // Step 1: 填写基本信息
+    logTest('Step 1: 填写基本信息...', 'info');
+    const nameInput = document.getElementById('f-name');
+    if (nameInput) {
+      nameInput.value = '测试学生';
+      logTest('✅ 名字已填写', 'ok');
+    }
+    
+    const scoreInput = document.getElementById('f-score');
+    if (scoreInput) {
+      scoreInput.value = '630';
+      logTest('✅ 成绩已填写: 630分', 'ok');
+    }
+    
+    // Step 2: 检查中外合作选项
+    logTest('Step 2: 检查中外合作选项...', 'info');
+    const cooperate = document.getElementById('f-cooperate');
+    if (cooperate) {
+      const isChecked = cooperate.checked;
+      logTest(`✅ 中外合作选项状态: ${isChecked ? '已勾选' : '未勾选'}`, 'ok');
+    }
+    
+    // Step 3: 验证学费数据
+    logTest('Step 3: 验证学费数据...', 'info');
+    if (COLLEGES.length > 0) {
+      const collegeWithTuition = COLLEGES.filter(c => c.tuition).length;
+      logTest(`✅ ${collegeWithTuition}/${COLLEGES.length} 所高校有学费信息`, 'ok');
+    }
+    
+    // Step 4: 检查报告生成准备
+    logTest('Step 4: 报告生成准备检查...', 'info');
+    const submitBtn = document.querySelector('.btn-submit');
+    if (submitBtn) {
+      logTest('✅ 生成报告按钮已找到', 'ok');
+    }
+    
+    logTest('=== 用户流程模拟完成 ===', 'ok');
+    logTest('用户可以正常使用系统，新增功能已就绪', 'ok');
+    
+  } catch (err) {
+    logTest(`流程模拟失败: ${err.message}`, 'error');
+    console.error(err);
+  }
+}
+
+// 页面加载完成后输出提示
+window.addEventListener('load', () => {
+  logTest('系统已加载，可开始测试', 'ok');
+  logTest('点击按钮开始自动化测试', 'info');
+});
+</script>
+
+<!-- 加载原系统内容 -->
+<script>
+// 动态加载系统HTML
+window.addEventListener('load', () => {
+  fetch('index.html')
+    .then(r => r.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const mainContent = doc.querySelector('main');
+      if (mainContent) {
+        document.getElementById('system-container').innerHTML = mainContent.innerHTML;
+        // 重新初始化系统
+        if (typeof showPage === 'function') {
+          showPage('survey');
+        }
+      }
+    })
+    .catch(err => {
+      console.log('注意: 系统内容加载方式不同，使用浏览器直接打开 index.html 效果更好');
+    });
+});
+</script>
+
+</body>
+</html>

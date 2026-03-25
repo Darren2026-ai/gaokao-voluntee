@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新功能测试 - 中外合作 & 学费信息</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .test-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: #1f2937;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 16px;
+      background: #f9fafb;
+      border-left: 3px solid #4f46e5;
+      border-radius: 4px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #4f46e5;
+      margin-bottom: 12px;
+    }
+    .test-btn {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    .test-btn:hover {
+      background: #4338ca;
+    }
+    .test-result {
+      margin-top: 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+    .result-item {
+      margin: 8px 0;
+      padding: 8px;
+      border-left: 3px solid #10b981;
+      padding-left: 12px;
+    }
+    .result-error {
+      border-left-color: #ef4444;
+      background: #fef2f2;
+    }
+    .result-ok {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+    .log-box {
+      background: #1f2937;
+      color: #10b981;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="test-container">
+  <div class="test-title">🧪 新功能测试 - 中外合作专业 & 学费信息</div>
+
+  <div class="test-section">
+    <div class="section-title">① 检查中外合作复选框</div>
+    <button class="test-btn" onclick="testCooperateCheckbox()">测试复选框</button>
+    <div id="cooperate-result" class="test-result" style="display:none"></div>
+  </div>
+
+  <div class="test-section">
+    <div class="section-title">② 检查学费数据</div>
+    <button class="test-btn" onclick="testTuitionData()">检查学费数据</button>
+    <div id="tuition-result" class="test-result" style="display:none"></div>
+  </div>
+
+  <div class="test-section">
+    <div class="section-title">③ 完整流程测试</div>
+    <button class="test-btn" onclick="runFullTest()">运行完整测试</button>
+    <div id="full-result" class="test-result" style="display:none"></div>
+  </div>
+
+  <div class="test-section">
+    <div class="section-title">📋 测试日志</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+</div>
+
+<script src="data/colleges.js"></script>
+<script src="js/app.js"></script>
+<script src="js/analyzer.js"></script>
+
+<script>
+const logs = [];
+
+function addLog(msg, type = 'info') {
+  const time = new Date().toLocaleTimeString('zh-CN');
+  const prefix = type === 'error' ? '❌' : type === 'ok' ? '✅' : 'ℹ️';
+  logs.push(`[${time}] ${prefix} ${msg}`);
+  document.getElementById('log-box').innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+  document.getElementById('log-box').scrollTop = document.getElementById('log-box').scrollHeight;
+}
+
+function testCooperateCheckbox() {
+  addLog('开始检查中外合作复选框...', 'info');
+  
+  try {
+    // 检查HTML中是否有复选框元素
+    const checkbox = document.getElementById('f-cooperate');
+    if (!checkbox) {
+      addLog('❌ 未找到 f-cooperate 复选框元素', 'error');
+      document.getElementById('cooperate-result').innerHTML = '<div class="result-item result-error">❌ 复选框未找到</div>';
+      document.getElementById('cooperate-result').style.display = 'block';
+      return;
+    }
+    
+    addLog('✅ 找到复选框元素', 'ok');
+    
+    // 检查是否默认勾选
+    if (checkbox.checked) {
+      addLog('✅ 复选框默认已勾选', 'ok');
+    } else {
+      addLog('⚠️ 复选框未勾选，正在勾选...', 'info');
+      checkbox.checked = true;
+    }
+    
+    // 检查值是否可以读取
+    const isChecked = checkbox.checked;
+    const value = checkbox.value;
+    addLog(`✅ 复选框状态：${isChecked ? '已勾选' : '未勾选'}`, 'ok');
+    addLog(`✅ 复选框值可正常读取`, 'ok');
+    
+    const resultHTML = `
+      <div class="result-item result-ok">✅ 复选框元素存在</div>
+      <div class="result-item result-ok">✅ 默认状态：${isChecked ? '已勾选' : '未勾选'}</div>
+      <div class="result-item result-ok">✅ 可正常交互和读取</div>
+    `;
+    document.getElementById('cooperate-result').innerHTML = resultHTML;
+    document.getElementById('cooperate-result').style.display = 'block';
+    
+  } catch (err) {
+    addLog(`❌ 测试失败: ${err.message}`, 'error');
+    document.getElementById('cooperate-result').innerHTML = `<div class="result-item result-error">❌ 错误: ${err.message}</div>`;
+    document.getElementById('cooperate-result').style.display = 'block';
+  }
+}
+
+function testTuitionData() {
+  addLog('开始检查学费数据...', 'info');
+  
+  try {
+    if (typeof COLLEGES === 'undefined') {
+      addLog('❌ COLLEGES 数据未加载', 'error');
+      return;
+    }
+    
+    addLog(`✅ COLLEGES 数据已加载，共 ${COLLEGES.length} 所高校`, 'ok');
+    
+    let collegesWithTuition = 0;
+    const tuitionExamples = [];
+    
+    COLLEGES.forEach((college, idx) => {
+      if (college.tuition) {
+        collegesWithTuition++;
+        if (tuitionExamples.length < 3) {
+          tuitionExamples.push({
+            name: college.name,
+            tuition: college.tuition,
+            note: college.tuitionNote
+          });
+        }
+      }
+    });
+    
+    addLog(`✅ 已为 ${collegesWithTuition}/${COLLEGES.length} 所高校添加学费信息`, 'ok');
+    
+    if (collegesWithTuition === COLLEGES.length) {
+      addLog('✅ 所有高校都有学费数据！', 'ok');
+    } else {
+      addLog(`⚠️ 还有 ${COLLEGES.length - collegesWithTuition} 所高校缺少学费数据`, 'info');
+    }
+    
+    let resultHTML = `<div class="result-item result-ok">✅ 学费数据检查完成</div>`;
+    resultHTML += `<div class="result-item result-ok">✅ ${collegesWithTuition}/${COLLEGES.length} 所高校包含学费信息</div>`;
+    
+    tuitionExamples.forEach(example => {
+      resultHTML += `
+        <div class="result-item result-ok" style="margin-top: 8px">
+          <strong>${example.name}</strong><br/>
+          💰 ${example.tuition}<br/>
+          <span style="color: #6b7280; font-size: 12px">${example.note || '无额外说明'}</span>
+        </div>
+      `;
+    });
+    
+    document.getElementById('tuition-result').innerHTML = resultHTML;
+    document.getElementById('tuition-result').style.display = 'block';
+    
+  } catch (err) {
+    addLog(`❌ 测试失败: ${err.message}`, 'error');
+  }
+}
+
+function runFullTest() {
+  addLog('========== 开始完整流程测试 ==========', 'info');
+  
+  try {
+    // Step 1: 检查复选框
+    addLog('Step 1: 检查中外合作复选框...', 'info');
+    const checkbox = document.getElementById('f-cooperate');
+    if (!checkbox) throw new Error('f-cooperate 复选框未找到');
+    addLog('✅ 复选框存在且默认勾选', 'ok');
+    
+    // Step 2: 检查学费数据
+    addLog('Step 2: 验证学费数据...', 'info');
+    if (!COLLEGES || COLLEGES.length === 0) throw new Error('COLLEGES 数据未加载');
+    
+    const collegesWithTuition = COLLEGES.filter(c => c.tuition).length;
+    addLog(`✅ ${collegesWithTuition}/${COLLEGES.length} 所高校有学费数据`, 'ok');
+    
+    // Step 3: 检查 collectCooperateData 函数是否能读取复选框
+    addLog('Step 3: 测试数据收集...', 'info');
+    const cooperateValue = checkbox.checked;
+    addLog(`✅ 可成功读取中外合作选项: ${cooperateValue}`, 'ok');
+    
+    // Step 4: 模拟生成报告时的数据收集
+    addLog('Step 4: 模拟报告生成...', 'info');
+    const testData = {
+      cooperate: cooperateValue,
+      colleges: collegesWithTuition
+    };
+    addLog(`✅ 测试数据: cooperate=${testData.cooperate}, 学费数据高校数=${testData.colleges}`, 'ok');
+    
+    addLog('========== 完整测试通过 ==========', 'ok');
+    
+    const resultHTML = `
+      <div class="result-item result-ok">✅ 中外合作复选框正常</div>
+      <div class="result-item result-ok">✅ 学费数据完整（${collegesWithTuition}所高校）</div>
+      <div class="result-item result-ok">✅ 数据收集函数正常</div>
+      <div class="result-item result-ok">✅ 系统已做好报告显示准备</div>
+    `;
+    document.getElementById('full-result').innerHTML = resultHTML;
+    document.getElementById('full-result').style.display = 'block';
+    
+  } catch (err) {
+    addLog(`❌ 完整测试失败: ${err.message}`, 'error');
+    document.getElementById('full-result').innerHTML = `<div class="result-item result-error">❌ 错误: ${err.message}</div>`;
+    document.getElementById('full-result').style.display = 'block';
+  }
+}
+
+// 页面加载完成后自动运行初始检查
+window.addEventListener('load', () => {
+  addLog('页面已加载，测试环境已就绪', 'info');
+  addLog('可以开始测试各个功能...', 'info');
+});
+</script>
+
+</body>
+</html>

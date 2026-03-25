@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>冲稳保院校数据调试</title>
+  <script src="data/colleges.js"></script>
+  <script src="data/industry-trends.js"></script>
+  <script src="js/analyzer.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .test-section { background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .test-button { background: #4F46E5; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin: 4px; }
+    .test-button:hover { background: #4338CA; }
+    .output { background: white; border: 1px solid #ddd; padding: 12px; margin: 8px 0; border-radius: 6px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    .success { color: #10B981; font-weight: bold; }
+    .error { color: #EF4444; font-weight: bold; }
+    .info { color: #3B82F6; }
+    pre { margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+  </style>
+</head>
+<body>
+
+<h1>🔍 冲稳保院校数据调试工具</h1>
+
+<div class="test-section">
+  <h3>1️⃣ 检查数据源</h3>
+  <button class="test-button" onclick="checkDataSource()">检查 COLLEGES 数据</button>
+  <button class="test-button" onclick="checkIndustry()">检查 INDUSTRY_TRENDS 数据</button>
+  <div id="data-output" class="output"></div>
+</div>
+
+<div class="test-section">
+  <h3>2️⃣ 创建分析器并生成数据</h3>
+  <button class="test-button" onclick="testAnalyzer()">测试完整分析流程</button>
+  <div id="analyzer-output" class="output"></div>
+</div>
+
+<div class="test-section">
+  <h3>3️⃣ 检查院校列表详情</h3>
+  <button class="test-button" onclick="showCollegeDetail()">显示冲刺院校 (前3所)</button>
+  <button class="test-button" onclick="showWenDetail()">显示稳妥院校 (前3所)</button>
+  <button class="test-button" onclick="showBaoDetail()">显示保底院校 (前3所)</button>
+  <div id="college-output" class="output"></div>
+</div>
+
+<div class="test-section">
+  <h3>4️⃣ 完整报告预览</h3>
+  <button class="test-button" onclick="generateFullReport()">生成完整报告并渲染</button>
+</div>
+
+<div id="report-preview" style="margin-top: 30px; display: none;">
+  <div style="background: white; border: 2px solid #4F46E5; border-radius: 8px; padding: 20px;">
+    <div id="report-content"></div>
+  </div>
+</div>
+
+<script>
+
+function log(elementId, message, type = 'info') {
+  const output = document.getElementById(elementId);
+  const now = new Date().toLocaleTimeString();
+  const color = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6';
+  output.innerHTML += `<div style="color: ${color}; margin-bottom: 8px;">[${now}] ${message}</div>`;
+  output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput(elementId) {
+  document.getElementById(elementId).innerHTML = '';
+}
+
+function checkDataSource() {
+  clearOutput('data-output');
+  log('data-output', '📊 检查 COLLEGES 数据源...', 'info');
+  
+  if (typeof COLLEGES === 'undefined') {
+    log('data-output', '❌ COLLEGES 未定义！', 'error');
+    return;
+  }
+  
+  log('data-output', `✅ COLLEGES 已加载，共 ${COLLEGES.length} 所大学`, 'success');
+  
+  // 检查第一所大学的结构
+  if (COLLEGES.length > 0) {
+    const col = COLLEGES[0];
+    const fields = Object.keys(col);
+    log('data-output', `📋 第一所大学 (${col.name}) 的字段: ${fields.join(', ')}`, 'info');
+    
+    // 检查是否有院校组数据
+    if (col.groups && col.groups.length > 0) {
+      const firstGroup = col.groups[0];
+      log('data-output', `📋 第一个专业组 (${firstGroup.code}) 的数据: minScore=${firstGroup.minScore}, minRank=${firstGroup.minRank}`, 'info');
+    }
+  }
+}
+
+function checkIndustry() {
+  clearOutput('data-output');
+  log('data-output', '📊 检查 INDUSTRY_TRENDS 数据源...', 'info');
+  
+  if (typeof INDUSTRY_TRENDS === 'undefined') {
+    log('data-output', '❌ INDUSTRY_TRENDS 未定义！', 'error');
+    return;
+  }
+  
+  if (!INDUSTRY_TRENDS.hot) {
+    log('data-output', '❌ INDUSTRY_TRENDS.hot 未定义！', 'error');
+    return;
+  }
+  
+  log('data-output', `✅ INDUSTRY_TRENDS 已加载，共 ${INDUSTRY_TRENDS.hot.length} 个热门行业`, 'success');
+  
+  // 显示前5个行业
+  INDUSTRY_TRENDS.hot.slice(0, 5).forEach((ind, idx) => {
+    log('data-output', `  ${idx+1}. ${ind.name} (${ind.growth}, ${ind.stage}) - 推荐专业: ${ind.majors.slice(0,2).join(', ')}`, 'info');
+  });
+}
+
+function testAnalyzer() {
+  clearOutput('analyzer-output');
+  log('analyzer-output', '🔄 开始分析流程...', 'info');
+  
+  try {
+    // 创建分析器
+    const user = {
+      score: 620,
+      rank: 8500,
+      subject: ['物理', '化学', '生物'],
+      cityPref: ['北京', '上海', '南京', '杭州'],
+      majorPref: ['计算机', '软件工程', '人工智能'],
+      holland: { R: 4, I: 9, A: 2, S: 5, E: 6, C: 3 }
+    };
+    
+    log('analyzer-output', `📝 用户数据: 分数=${user.score}, 位次=${user.rank}`, 'info');
+    
+    const analyzer = new GaoKaoAnalyzer(user);
+    log('analyzer-output', '✅ 分析器已创建', 'success');
+    
+    const result = analyzer.analyze();
+    log('analyzer-output', '✅ analyze() 执行完成', 'success');
+    
+    // 检查结果中的各个字段
+    log('analyzer-output', `📊 userProfile: ${JSON.stringify(result.userProfile).substring(0, 80)}...`, 'info');
+    log('analyzer-output', `📊 scoreLevel: ${result.scoreLevel}`, 'info');
+    log('analyzer-output', `📊 hollandType.primaryInfo.name: ${result.hollandType?.primaryInfo?.name}`, 'info');
+    
+    // 重点检查 collegeList
+    if (result.collegeList) {
+      log('analyzer-output', `✅ collegeList 已生成`, 'success');
+      log('analyzer-output', `  - 冲刺: ${result.collegeList.chong?.length || 0} 所`, 'info');
+      log('analyzer-output', `  - 稳妥: ${result.collegeList.wen?.length || 0} 所`, 'info');
+      log('analyzer-output', `  - 保底: ${result.collegeList.bao?.length || 0} 所`, 'info');
+      
+      // 检查数据结构
+      if (result.collegeList.chong && result.collegeList.chong.length > 0) {
+        const firstChong = result.collegeList.chong[0];
+        log('analyzer-output', `📋 冲刺院校 #1: ${firstChong.collegeName}`, 'info');
+        log('analyzer-output', `   - 专业组: ${firstChong.groupCode}`, 'info');
+        log('analyzer-output', `   - 最低分: ${firstChong.minScore}`, 'info');
+        log('analyzer-output', `   - 最低位次: ${firstChong.minRank}`, 'info');
+        log('analyzer-output', `   - 录取概率: ${firstChong.admitProb}`, 'info');
+      }
+    } else {
+      log('analyzer-output', '❌ collegeList 未生成！', 'error');
+    }
+    
+    // 检查 industryTrends
+    if (result.industryTrends && result.industryTrends.length > 0) {
+      log('analyzer-output', `✅ industryTrends 已生成: ${result.industryTrends.length} 个行业`, 'success');
+    } else {
+      log('analyzer-output', '⚠️  industryTrends 为空或未生成', 'error');
+    }
+    
+    // 保存结果供后续使用
+    window.lastAnalysisResult = result;
+    log('analyzer-output', '💾 分析结果已保存到 window.lastAnalysisResult', 'info');
+    
+  } catch (error) {
+    log('analyzer-output', `❌ 错误: ${error.message}`, 'error');
+    console.error(error);
+  }
+}
+
+function showCollegeDetail() {
+  clearOutput('college-output');
+  if (!window.lastAnalysisResult) {
+    log('college-output', '❌ 请先点击 "测试完整分析流程"', 'error');
+    return;
+  }
+  
+  const list = window.lastAnalysisResult.collegeList.chong;
+  log('college-output', `🚀 冲刺院校详情 (共 ${list.length} 所, 显示前3所)`, 'success');
+  
+  list.slice(0, 3).forEach((c, idx) => {
+    log('college-output', `\n[${idx+1}] ${c.collegeName}`, 'success');
+    log('college-output', JSON.stringify(c, null, 2), 'info');
+  });
+}
+
+function showWenDetail() {
+  clearOutput('college-output');
+  if (!window.lastAnalysisResult) {
+    log('college-output', '❌ 请先点击 "测试完整分析流程"', 'error');
+    return;
+  }
+  
+  const list = window.lastAnalysisResult.collegeList.wen;
+  log('college-output', `✅ 稳妥院校详情 (共 ${list.length} 所, 显示前3所)`, 'success');
+  
+  list.slice(0, 3).forEach((c, idx) => {
+    log('college-output', `\n[${idx+1}] ${c.collegeName}`, 'success');
+    log('college-output', JSON.stringify(c, null, 2), 'info');
+  });
+}
+
+function showBaoDetail() {
+  clearOutput('college-output');
+  if (!window.lastAnalysisResult) {
+    log('college-output', '❌ 请先点击 "测试完整分析流程"', 'error');
+    return;
+  }
+  
+  const list = window.lastAnalysisResult.collegeList.bao;
+  log('college-output', `🛡️  保底院校详情 (共 ${list.length} 所, 显示前3所)`, 'success');
+  
+  list.slice(0, 3).forEach((c, idx) => {
+    log('college-output', `\n[${idx+1}] ${c.collegeName}`, 'success');
+    log('college-output', JSON.stringify(c, null, 2), 'info');
+  });
+}
+
+function generateFullReport() {
+  if (!window.lastAnalysisResult) {
+    alert('❌ 请先点击 "测试完整分析流程"');
+    return;
+  }
+  
+  const result = window.lastAnalysisResult;
+  const collegeList = result.collegeList;
+  
+  let html = '<div style="padding: 20px;">';
+  
+  // 冲刺
+  html += '<h3>🚀 冲刺院校 (前5所)</h3>';
+  if (collegeList.chong && collegeList.chong.length > 0) {
+    collegeList.chong.slice(0, 5).forEach(c => {
+      html += `
+        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin: 8px 0; border-radius: 4px;">
+          <strong>${c.collegeName}</strong> | 专业组 ${c.groupCode} | ${c.minScore}分 | 位次 ${c.minRank} | 概率 ${c.admitProb}
+          <br/><small>${c.groupNote} | ${c.characteristic}</small>
+        </div>
+      `;
+    });
+  } else {
+    html += '<p>❌ 未生成冲刺院校</p>';
+  }
+  
+  // 稳妥
+  html += '<h3>✅ 稳妥院校 (前5所)</h3>';
+  if (collegeList.wen && collegeList.wen.length > 0) {
+    collegeList.wen.slice(0, 5).forEach(c => {
+      html += `
+        <div style="background: #cfe9ff; border: 1px solid #0d6efd; padding: 10px; margin: 8px 0; border-radius: 4px;">
+          <strong>${c.collegeName}</strong> | 专业组 ${c.groupCode} | ${c.minScore}分 | 位次 ${c.minRank} | 概率 ${c.admitProb}
+          <br/><small>${c.groupNote} | ${c.characteristic}</small>
+        </div>
+      `;
+    });
+  } else {
+    html += '<p>❌ 未生成稳妥院校</p>';
+  }
+  
+  // 保底
+  html += '<h3>🛡️ 保底院校 (前5所)</h3>';
+  if (collegeList.bao && collegeList.bao.length > 0) {
+    collegeList.bao.slice(0, 5).forEach(c => {
+      html += `
+        <div style="background: #d1e7dd; border: 1px solid #198754; padding: 10px; margin: 8px 0; border-radius: 4px;">
+          <strong>${c.collegeName}</strong> | 专业组 ${c.groupCode} | ${c.minScore}分 | 位次 ${c.minRank} | 概率 ${c.admitProb}
+          <br/><small>${c.groupNote} | ${c.characteristic}</small>
+        </div>
+      `;
+    });
+  } else {
+    html += '<p>❌ 未生成保底院校</p>';
+  }
+  
+  html += '</div>';
+  
+  document.getElementById('report-content').innerHTML = html;
+  document.getElementById('report-preview').style.display = 'block';
+  window.scrollTo(0, document.getElementById('report-preview').offsetTop - 50);
+}
+
+</script>
+
+</body>
+</html>

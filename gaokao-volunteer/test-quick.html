@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>快速测试 - 志愿推荐</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .log { border: 1px solid #ccc; padding: 10px; margin: 10px 0; max-height: 300px; overflow: auto; background: #f9f9f9; }
+    .ok { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>快速测试 - 志愿推荐功能</h1>
+  <div class="log" id="log"></div>
+  <button onclick="runTest()">运行测试</button>
+
+  <script src="data/colleges.js"></script>
+  <script src="js/analyzer.js"></script>
+  
+  <script>
+    function log(msg, type = 'info') {
+      const el = document.getElementById('log');
+      const span = document.createElement('div');
+      span.textContent = msg;
+      if (type === 'ok') span.className = 'ok';
+      if (type === 'error') span.className = 'error';
+      el.appendChild(span);
+    }
+
+    function runTest() {
+      document.getElementById('log').innerHTML = '';
+      
+      // 测试 COLLEGES 数据
+      log(`COLLEGES 已加载: ${COLLEGES?.length || 0} 所高校`, COLLEGES?.length > 0 ? 'ok' : 'error');
+      
+      // 模拟用户数据
+      const userData = {
+        name: '测试考生',
+        gender: '男',
+        province: '广东',
+        score: 600,
+        subject: '物理类（物化生）',
+        interests: ['I'],
+        targetMajor: '计算机',
+        cityPreference: [],
+        priority: 'balanced'
+      };
+      
+      log(`用户数据: 分数${userData.score}`, 'info');
+      
+      try {
+        // 创建分析器
+        const analyzer = new GaoKaoAnalyzer(userData);
+        log('✓ 分析器创建成功', 'ok');
+        
+        // 执行分析
+        const result = analyzer.analyze();
+        log('✓ 分析执行成功', 'ok');
+        
+        // 检查院校推荐
+        const collegeList = result.collegeList;
+        log(`冲刺院校: ${collegeList.chong?.length || 0} 所`, collegeList.chong?.length > 0 ? 'ok' : 'error');
+        log(`稳妥院校: ${collegeList.wen?.length || 0} 所`, collegeList.wen?.length > 0 ? 'ok' : 'error');
+        log(`保底院校: ${collegeList.bao?.length || 0} 所`, collegeList.bao?.length > 0 ? 'ok' : 'error');
+        
+        if (collegeList.chong?.length > 0) {
+          log(`第一个冲刺院校: ${collegeList.chong[0].collegeName}`, 'ok');
+        }
+        
+        // 检查其他数据
+        log(`行业趋势: ${result.industryTrends?.length || 0} 个`, result.industryTrends?.length > 0 ? 'ok' : 'error');
+        log(`推荐专业: ${result.recommendedMajors?.length || 0} 个`, result.recommendedMajors?.length > 0 ? 'ok' : 'error');
+        
+      } catch (e) {
+        log(`❌ 错误: ${e.message}`, 'error');
+        log(`堆栈: ${e.stack}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

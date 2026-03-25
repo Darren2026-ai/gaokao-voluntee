@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>快速院校数据测试</title>
+  <script src="data/colleges.js"></script>
+  <script src="js/analyzer.js"></script>
+</head>
+<body>
+<pre id="output"></pre>
+<script>
+  const testUser = {
+    score: 620,
+    rank: 8500,
+    subject: ['物理', '化学', '生物'],
+    cityPreference: [],
+    targetMajor: '计算机',
+    priority: 'balanced'
+  };
+  
+  const analyzer = new GaoKaoAnalyzer(testUser);
+  const result = analyzer.analyze();
+  
+  let output = '=== 院校推荐数据生成测试 ===\n\n';
+  output += `分数: ${testUser.score}, 位次: ${testUser.rank}\n\n`;
+  
+  output += `✅ 冲刺院校: ${result.collegeList.chong.length}所\n`;
+  if (result.collegeList.chong.length > 0) {
+    const top3 = result.collegeList.chong.slice(0, 3);
+    top3.forEach((c, idx) => {
+      output += `  ${idx+1}. ${c.collegeName} (${c.city}) - 专业组${c.groupCode}\n`;
+      output += `     分数: ${c.minScore}分 | 位次: ${c.minRank} | 概率: ${c.admitProb}\n`;
+      output += `     专业: ${c.subjects.slice(0,2).join(', ')}\n`;
+      output += `     特色: ${c.characteristic}\n\n`;
+    });
+  }
+  
+  output += `✅ 稳妥院校: ${result.collegeList.wen.length}所\n`;
+  if (result.collegeList.wen.length > 0) {
+    const top3 = result.collegeList.wen.slice(0, 3);
+    top3.forEach((c, idx) => {
+      output += `  ${idx+1}. ${c.collegeName} (${c.city}) - 专业组${c.groupCode}\n`;
+      output += `     分数: ${c.minScore}分 | 位次: ${c.minRank} | 概率: ${c.admitProb}\n`;
+      output += `     专业: ${c.subjects.slice(0,2).join(', ')}\n`;
+      output += `     特色: ${c.characteristic}\n\n`;
+    });
+  }
+  
+  output += `✅ 保底院校: ${result.collegeList.bao.length}所\n`;
+  if (result.collegeList.bao.length > 0) {
+    const top3 = result.collegeList.bao.slice(0, 3);
+    top3.forEach((c, idx) => {
+      output += `  ${idx+1}. ${c.collegeName} (${c.city}) - 专业组${c.groupCode}\n`;
+      output += `     分数: ${c.minScore}分 | 位次: ${c.minRank} | 概率: ${c.admitProb}\n`;
+      output += `     专业: ${c.subjects.slice(0,2).join(', ')}\n`;
+      output += `     特色: ${c.characteristic}\n\n`;
+    });
+  }
+  
+  document.getElementById('output').textContent = output;
+</script>
+</body>
+</html>

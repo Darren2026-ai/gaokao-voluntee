@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>调试 - 院校推荐生成</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .debug-box { background: white; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #4F46E5; }
+    .error { border-left-color: #EF4444; background: #FEF2F2; }
+    .success { border-left-color: #10B981; background: #F0FDF4; }
+    pre { background: #f9f9f9; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    button { padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 院校推荐调试工具</h1>
+  <div>
+    <button onclick="testCollegesLoad()">1. 测试数据加载</button>
+    <button onclick="testAnalyzer()">2. 测试分析器</button>
+    <button onclick="testRender()">3. 测试渲染</button>
+    <button onclick="fullTest()">4. 完整测试</button>
+    <button onclick="clearDebug()">清除</button>
+  </div>
+  <div id="debug"></div>
+
+  <script src="data/colleges.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    function debug(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `debug-box ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
+      
+      if (typeof msg === 'object') {
+        div.innerHTML = '<pre>' + JSON.stringify(msg, null, 2) + '</pre>';
+      } else {
+        div.textContent = msg;
+      }
+      
+      document.getElementById('debug').appendChild(div);
+    }
+
+    function clearDebug() {
+      document.getElementById('debug').innerHTML = '';
+    }
+
+    function testCollegesLoad() {
+      clearDebug();
+      try {
+        if (typeof COLLEGES === 'undefined') {
+          debug('❌ COLLEGES 未定义', 'error');
+          return;
+        }
+        debug(`✅ COLLEGES 已加载: ${COLLEGES.length} 所高校`, 'success');
+        debug(`第一个高校: ${COLLEGES[0].name}`, 'success');
+        debug(`第一个高校的专业组数: ${COLLEGES[0].groups.length}`, 'success');
+      } catch (e) {
+        debug(`❌ 错误: ${e.message}`, 'error');
+      }
+    }
+
+    function testAnalyzer() {
+      clearDebug();
+      try {
+        const userData = {
+          name: '测试同学',
+          score: 600,
+          province: '广东',
+          subject: '物理类（物化生）',
+          interests: ['I', 'R'],
+          targetMajor: '计算机',
+          cityPreference: [],
+          priority: 'balanced'
+        };
+
+        debug('用户数据:', userData);
+
+        const analyzer = new GaoKaoAnalyzer(userData);
+        debug('✅ 分析器创建成功', 'success');
+
+        const result = analyzer.analyze();
+        debug('✅ 分析完成', 'success');
+
+        // 详细检查 collegeList
+        const cl = result.collegeList;
+        debug(`冲刺院校数量: ${cl.chong?.length || 0}`, cl.chong?.length > 0 ? 'success' : 'error');
+        debug(`稳妥院校数量: ${cl.wen?.length || 0}`, cl.wen?.length > 0 ? 'success' : 'error');
+        debug(`保底院校数量: ${cl.bao?.length || 0}`, cl.bao?.length > 0 ? 'success' : 'error');
+
+        if (cl.chong?.length > 0) {
+          debug('第一个冲刺院校的数据:', cl.chong[0]);
+        }
+
+      } catch (e) {
+        debug(`❌ 错误: ${e.message}`, 'error');
+        debug(e.stack, 'error');
+      }
+    }
+
+    function testRender() {
+      clearDebug();
+      try {
+        const userData = {
+          name: '测试同学',
+          score: 600,
+          province: '广东',
+          subject: '物理类（物化生）'
+        };
+
+        const analyzer = new GaoKaoAnalyzer(userData);
+        const result = analyzer.analyze();
+
+        // 测试 renderCollegeList
+        const html = renderCollegeList(result.collegeList.chong, 'chong');
+        
+        debug('✅ renderCollegeList 函数调用成功', 'success');
+        debug(`生成的 HTML 长度: ${html.length} 字符`, 'success');
+        
+        if (html.includes('college-card')) {
+          debug('✅ HTML 中包含 college-card 类', 'success');
+        } else {
+          debug('❌ HTML 中不包含 college-card 类', 'error');
+        }
+
+        debug('生成的 HTML 预览:', html.substring(0, 500));
+
+      } catch (e) {
+        debug(`❌ 错误: ${e.message}`, 'error');
+        debug(e.stack, 'error');
+      }
+    }
+
+    function fullTest() {
+      clearDebug();
+      testCollegesLoad();
+      setTimeout(() => testAnalyzer(), 500);
+      setTimeout(() => testRender(), 1000);
+    }
+  </script>
+</body>
+</html>

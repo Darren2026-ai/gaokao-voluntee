@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>浏览器控制台测试指南</title>
+  <style>
+    body { font-family: Arial; padding: 20px; line-height: 1.6; }
+    .section { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 4px; }
+    code { background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    pre { background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto; border: 1px solid #ddd; }
+    button { padding: 10px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+  </style>
+</head>
+<body>
+
+<h1>🔍 浏览器控制台测试指南</h1>
+
+<div class="section">
+  <h2>第一步：打开浏览器控制台</h2>
+  <ul>
+    <li><strong>Chrome/Edge/Firefox:</strong> 按 <code>F12</code> 或 <code>Ctrl+Shift+J</code> (Windows) / <code>Cmd+Option+J</code> (Mac)</li>
+    <li><strong>Safari:</strong> 右键 → 检查元素 → 控制台</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>第二步：访问原始页面</h2>
+  <button onclick="openOriginal()">📄 打开 index.html</button>
+</div>
+
+<div class="section">
+  <h2>第三步：在控制台中复制粘贴以下代码</h2>
+  
+  <h3>测试 1: 检查基本依赖</h3>
+  <pre><code>console.log('COLLEGES:', typeof COLLEGES, COLLEGES?.length);
+console.log('GaoKaoAnalyzer:', typeof GaoKaoAnalyzer);
+console.log('generateReport:', typeof generateReport);
+console.log('ExamConverter:', typeof ExamConverter);</code></pre>
+
+  <h3>测试 2: 检查按钮是否存在</h3>
+  <pre><code>const btn = document.querySelector('.btn-submit');
+console.log('按钮元素:', btn);
+console.log('按钮 onclick:', btn?.onclick);</code></pre>
+
+  <h3>测试 3: 手动触发生成报告</h3>
+  <pre><code>// 先填写必要的表单字段
+document.getElementById('f-score').value = 630;
+document.getElementById('f-name').value = '测试';
+document.getElementById('f-province').value = '广东';
+document.getElementById('f-subject').value = '物理类（物化生）';
+
+// 然后手动调用生成报告
+console.log('正在生成报告...');
+generateReport().then(() => {
+  console.log('✅ 报告生成完成！');
+}).catch(err => {
+  console.error('❌ 生成失败:', err.message);
+  console.error('完整错误:', err);
+});</code></pre>
+
+  <h3>测试 4: 检查分析器是否工作</h3>
+  <pre><code>try {
+  const analyzer = new GaoKaoAnalyzer({
+    score: 630,
+    interests: [],
+    cityPreference: []
+  });
+  const result = analyzer.analyze();
+  console.log('✅ 分析器工作正常');
+  console.log('结果:', result);
+} catch (e) {
+  console.error('❌ 分析器错误:', e.message);
+}</code></pre>
+
+  <h3>测试 5: 查看完整的错误堆栈</h3>
+  <pre><code>// 在控制台中，按 F12 后在 Console 标签中，按 Ctrl+Shift+I 查看任何错误</code></pre>
+</div>
+
+<div class="section">
+  <h2>第四步：截图并告诉我结果</h2>
+  <p>按照以上测试步骤，告诉我：</p>
+  <ul>
+    <li>✅ 第1步：COLLEGES、GaoKaoAnalyzer、generateReport 显示什么？</li>
+    <li>✅ 第2步：按钮是否存在？</li>
+    <li>✅ 第3步：手动调用时是否有错误？</li>
+    <li>✅ 第4步：分析器是否工作？</li>
+    <li>✅ 第5步：控制台中是否有任何红色错误？</li>
+  </ul>
+</div>
+
+<script>
+  function openOriginal() {
+    window.open('/index.html', 'original');
+  }
+</script>
+
+</body>
+</html>

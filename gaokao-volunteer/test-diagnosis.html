@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>院校推荐诊断工具</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .section { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .section h2 { margin-top: 0; color: #1f2937; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+    button { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; }
+    button:hover { background: #2563eb; }
+    .output { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #3b82f6; font-family: 'Courier New', monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    .success { border-left-color: #10b981; color: #059669; }
+    .error { border-left-color: #ef4444; color: #dc2626; }
+    .warning { border-left-color: #f59e0b; color: #d97706; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+    th { background: #f3f4f6; font-weight: 600; }
+    .college-preview { background: #f0fdf4; padding: 10px; border-radius: 4px; margin: 5px 0; border-left: 3px solid #10b981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 高考志愿推荐系统 - 诊断工具</h1>
+    
+    <div class="section">
+      <h2>1️⃣ 基础数据检查</h2>
+      <button onclick="checkCollagesData()">检查 COLLEGES 数据</button>
+      <button onclick="checkIndustryData()">检查 INDUSTRY_TRENDS 数据</button>
+      <div id="output1" class="output"></div>
+    </div>
+
+    <div class="section">
+      <h2>2️⃣ 分析器测试</h2>
+      <button onclick="testAnalyzer()">创建分析器并执行分析</button>
+      <div id="output2" class="output"></div>
+    </div>
+
+    <div class="section">
+      <h2>3️⃣ 院校数据详情</h2>
+      <button onclick="showCollegeList()">显示冲稳保院校详情</button>
+      <div id="output3" class="output"></div>
+    </div>
+
+    <div class="section">
+      <h2>4️⃣ 完整报告生成</h2>
+      <button onclick="testFullReport()">生成完整报告并检查</button>
+      <div id="output4" class="output"></div>
+    </div>
+  </div>
+
+  <!-- 数据文件加载 -->
+  <script src="data/colleges.js"></script>
+  <script src="data/industry-trends.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    function log(containerId, message, type = 'normal') {
+      const output = document.getElementById(containerId);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : '';
+      output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function checkCollagesData() {
+      const output = 'output1';
+      document.getElementById(output).innerHTML = '';
+      
+      log(output, '检查 COLLEGES 全局变量...');
+      
+      if (typeof COLLEGES === 'undefined') {
+        log(output, '❌ COLLEGES 未定义！', 'error');
+        return;
+      }
+      
+      log(output, `✅ COLLEGES 已加载，共 ${COLLEGES.length} 所大学`, 'success');
+      
+      const sample = COLLEGES[0];
+      log(output, `示例大学：${sample.name}`);
+      log(output, `  - 等级: ${sample.level}`);
+      log(output, `  - 城市: ${sample.city}`);
+      log(output, `  - 专业组数: ${sample.groups?.length || 0}`);
+      log(output, `  - 学费: ${sample.tuition}`);
+      
+      if (sample.groups && sample.groups.length > 0) {
+        const g = sample.groups[0];
+        log(output, `  - 示例专业组: 组${g.code} | ${g.note}`);
+        log(output, `    · 最低分: ${g.minScore}`);
+        log(output, `    · 最低位次: ${g.minRank}`);
+        log(output, `    · 专业数: ${g.subjects?.length || 0}`);
+      }
+    }
+
+    function checkIndustryData() {
+      const output = 'output1';
+      document.getElementById(output).innerHTML = '';
+      
+      log(output, '检查 INDUSTRY_TRENDS 全局变量...');
+      
+      if (typeof INDUSTRY_TRENDS === 'undefined') {
+        log(output, '❌ INDUSTRY_TRENDS 未定义！', 'error');
+        return;
+      }
+      
+      log(output, `✅ INDUSTRY_TRENDS 已加载`, 'success');
+      log(output, `热门行业数: ${INDUSTRY_TRENDS.hot?.length || 0}`);
+      
+      if (INDUSTRY_TRENDS.hot && INDUSTRY_TRENDS.hot.length > 0) {
+        INDUSTRY_TRENDS.hot.slice(0, 3).forEach((ind, i) => {
+          log(output, `${i+1}. ${ind.name} | 增长: ${ind.growth} | 阶段: ${ind.stage}`);
+          log(output, `   推荐专业: ${ind.majors?.join(', ')}`);
+        });
+      }
+    }
+
+    function testAnalyzer() {
+      const output = 'output2';
+      document.getElementById(output).innerHTML = '';
+      
+      log(output, '创建测试用户数据...');
+      
+      const testUser = {
+        name: '测试学生',
+        score: 600,
+        rank: 15000,
+        subject: '物化生',
+        targetMajor: '计算机',
+        cityPreference: ['广东', '上海'],
+        priority: 'balanced'
+      };
+      
+      log(output, `用户: ${testUser.name} | 分数: ${testUser.score} | 位次: ${testUser.rank}`, 'success');
+      
+      try {
+        log(output, '创建分析器...');
+        const analyzer = new GaoKaoAnalyzer(testUser);
+        
+        log(output, '执行分析...');
+        const result = analyzer.analyze();
+        
+        log(output, '✅ 分析成功！', 'success');
+        log(output, `结果包含的字段:`);
+        log(output, `  - userProfile: ${Object.keys(result.userProfile || {}).length} 个字段`);
+        log(output, `  - rankInfo: ${JSON.stringify(result.rankInfo)}`);
+        log(output, `  - scoreLevel: ${result.scoreLevel}`);
+        log(output, `  - hollandType: ${result.hollandType}`);
+        log(output, `  - recommendedMajors: ${result.recommendedMajors?.length || 0} 个`);
+        log(output, `  - cityStrategy: ${result.cityStrategy?.length || 0} 个`);
+        log(output, `  - collegeList:`, 'success');
+        log(output, `    · 冲刺: ${result.collegeList?.chong?.length || 0} 所`);
+        log(output, `    · 稳妥: ${result.collegeList?.wen?.length || 0} 所`);
+        log(output, `    · 保底: ${result.collegeList?.bao?.length || 0} 所`);
+        
+        // 保存全局变量供后续使用
+        window._testResult = result;
+        window._testUser = testUser;
+        
+      } catch (error) {
+        log(output, `❌ 分析失败: ${error.message}`, 'error');
+        log(output, `堆栈: ${error.stack}`, 'error');
+      }
+    }
+
+    function showCollegeList() {
+      const output = 'output3';
+      document.getElementById(output).innerHTML = '';
+      
+      if (!window._testResult) {
+        log(output, '❌ 请先运行"分析器测试"！', 'error');
+        return;
+      }
+      
+      const collegeList = window._testResult.collegeList;
+      
+      log(output, `📊 冲稳保院校详情 (共${(collegeList.chong?.length||0) + (collegeList.wen?.length||0) + (collegeList.bao?.length||0)}所)`);
+      
+      // 冲刺
+      log(output, `🚀 冲刺院校 (${collegeList.chong?.length || 0}所):`);
+      if (collegeList.chong && collegeList.chong.length > 0) {
+        collegeList.chong.slice(0, 3).forEach((c, i) => {
+          log(output, `
+  ${i+1}. ${c.collegeName} | 组${c.groupCode}
+     专业: ${c.subjects?.slice(0,3)?.join('、')}
+     分数: ${c.minScore} | 位次: ${c.minRank}
+     分数差: ${c.scoreDiff > 0 ? '+' : ''}${c.scoreDiff} | 录取概率: ${c.admitProb}
+          `, c.majorMatch ? 'success' : 'normal');
+        });
+        if (collegeList.chong.length > 3) {
+          log(output, `... 及其他 ${collegeList.chong.length - 3} 所`);
+        }
+      }
+      
+      // 稳妥
+      log(output, `✅ 稳妥院校 (${collegeList.wen?.length || 0}所):`);
+      if (collegeList.wen && collegeList.wen.length > 0) {
+        collegeList.wen.slice(0, 3).forEach((c, i) => {
+          log(output, `
+  ${i+1}. ${c.collegeName} | 组${c.groupCode}
+     专业: ${c.subjects?.slice(0,3)?.join('、')}
+     分数: ${c.minScore} | 位次: ${c.minRank}
+     分数差: ${c.scoreDiff > 0 ? '+' : ''}${c.scoreDiff} | 录取概率: ${c.admitProb}
+          `, 'success');
+        });
+        if (collegeList.wen.length > 3) {
+          log(output, `... 及其他 ${collegeList.wen.length - 3} 所`);
+        }
+      }
+      
+      // 保底
+      log(output, `🛡️ 保底院校 (${collegeList.bao?.length || 0}所):`);
+      if (collegeList.bao && collegeList.bao.length > 0) {
+        collegeList.bao.slice(0, 3).forEach((c, i) => {
+          log(output, `
+  ${i+1}. ${c.collegeName} | 组${c.groupCode}
+     专业: ${c.subjects?.slice(0,3)?.join('、')}
+     分数: ${c.minScore} | 位次: ${c.minRank}
+     分数差: ${c.scoreDiff > 0 ? '+' : ''}${c.scoreDiff} | 录取概率: ${c.admitProb}
+          `, 'success');
+        });
+        if (collegeList.bao.length > 3) {
+          log(output, `... 及其他 ${collegeList.bao.length - 3} 所`);
+        }
+      }
+    }
+
+    function testFullReport() {
+      const output = 'output4';
+      document.getElementById(output).innerHTML = '';
+      
+      if (!window._testResult) {
+        log(output, '❌ 请先运行"分析器测试"！', 'error');
+        return;
+      }
+      
+      const collegeList = window._testResult.collegeList;
+      
+      log(output, '📝 生成院校卡片HTML...');
+      
+      try {
+        // 模拟renderCollegeCard函数
+        function testRenderCard(c, type) {
+          const scoreDiff = c.scoreDiff >= 0 ? `高${c.scoreDiff}分` : `低${Math.abs(c.scoreDiff)}分`;
+          return `
+  ✓ ${c.collegeName}
+    • 专业组: 组${c.groupCode} (${c.subjects?.slice(0,2)?.join('/')}...)
+    • 分数: ${c.minScore}分 (${scoreDiff})
+    • 位次: 第${c.minRank}名
+    • 概率: ${c.admitProb}
+          `;
+        }
+        
+        log(output, `✅ 冲稳保院校总计: ${(collegeList.chong?.length||0)+(collegeList.wen?.length||0)+(collegeList.bao?.length||0)} 所`);
+        
+        log(output, `🚀 冲刺院校渲染:`);
+        if (collegeList.chong && collegeList.chong.length > 0) {
+          collegeList.chong.forEach((c, i) => {
+            log(output, testRenderCard(c, 'chong'), 'success');
+          });
+        } else {
+          log(output, '❌ 冲刺院校列表为空！', 'error');
+        }
+        
+        log(output, `✅ 稳妥院校渲染:`);
+        if (collegeList.wen && collegeList.wen.length > 0) {
+          collegeList.wen.forEach((c, i) => {
+            log(output, testRenderCard(c, 'wen'), 'success');
+          });
+        } else {
+          log(output, '❌ 稳妥院校列表为空！', 'error');
+        }
+        
+        log(output, `🛡️ 保底院校渲染:`);
+        if (collegeList.bao && collegeList.bao.length > 0) {
+          collegeList.bao.forEach((c, i) => {
+            log(output, testRenderCard(c, 'bao'), 'success');
+          });
+        } else {
+          log(output, '❌ 保底院校列表为空！', 'error');
+        }
+        
+      } catch (error) {
+        log(output, `❌ 渲染失败: ${error.message}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
