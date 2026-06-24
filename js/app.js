@@ -397,7 +397,7 @@ function updateMockPreview() {
   preview.style.display = 'block';
   preview.innerHTML = `
     <div style="font-size:13px; color:#6B7280; margin-bottom:4px">${examYear}年${examType} ${score}分 → 预估高考成绩</div>
-    <div style="font-size:22px; font-weight:800; color:#4F46E5">${result.estimatedGaoKao}分</div>
+    <div style="font-size:22px; font-weight:800; color:#1e40af">${result.estimatedGaoKao}分</div>
     <div style="font-size:14px; color:#374151; margin:4px 0">区间：${result.range}</div>
     ${rankInfo}
     <div style="font-size:12px; color:#9CA3AF; line-height:1.5">${result.note}</div>
@@ -691,316 +691,326 @@ function renderReport(user, data) {
   const subjectDisplay = formatSubjectDisplay(user.subject);
 
   const html = `
-    <div class="report-wrap">
+    <div class="report-pages-container">
 
-      <!-- 顶部 Hero -->
-      <div class="report-hero">
-        <div class="report-title">📋 ${name}的高考志愿填报分析报告</div>
-        <div class="report-subtitle">基于2025年广东省真实录取数据 · 六维度综合分析 · ${new Date().toLocaleDateString('zh-CN')}</div>
-        <div class="report-meta">
-          <div class="report-meta-item">
-            <div class="report-meta-label">选科组合</div>
-            <div class="report-meta-value">${subjectDisplay}</div>
-          </div>
-          <div class="report-meta-item">
-            <div class="report-meta-label">成绩</div>
-            <div class="report-meta-value">${score}分</div>
-            ${user.examType ? `<div style="font-size:12px; color:#6B7280; margin-top:4px">基于${user.examYear}年${user.examType}换算</div>` : ''}
-          </div>
-          <div class="report-meta-item">
-            <div class="report-meta-label">全省位次（估算）</div>
-            <div class="report-meta-value">约第${rankInfo.rank?.toLocaleString()}名</div>
-            ${user.mockRank && user.totalStudents ? `<div style="font-size:12px; color:#6B7280; margin-top:4px">全市${user.mockRank}名（前${Math.round((user.mockRank/user.totalStudents)*100)}%）</div>` : ''}
-          </div>
-          <div class="report-meta-item">
-            <div class="report-meta-label">成绩层次</div>
-            <div class="report-meta-value" style="font-size:16px; margin-top:6px">
-              <span style="background:${scoreLevel.color}; color:#fff; padding:4px 14px; border-radius:50px; font-size:14px">${scoreLevel.label}</span>
-            </div>
-          </div>
-          <div class="report-meta-item">
-            <div class="report-meta-label">超过全省考生</div>
-            <div class="report-meta-value">${rankInfo.percentile}%</div>
-          </div>
-        </div>
+      <!-- ========== 页面切换导航 ========== -->
+      <div class="report-page-nav">
+        <button class="report-page-nav-btn active" onclick="switchReportPage(1)">📊 第1页 · 综合分析与定位</button>
+        <button class="report-page-nav-btn" onclick="switchReportPage(2)">📋 第2页 · 院校推荐与填报方案</button>
       </div>
 
-      <!-- ① 分数定位 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">📍</span>分数定位与位次分析</div>
-        <div class="dimension-grid">
-          <div class="dimension-item">
-            <div class="dimension-icon">🏆</div>
-            <div class="dimension-label">全省位次${user.subject.includes('历史') ? '（历史类）' : '（物理类）'}</div>
-            <div class="dimension-value">约第 ${rankInfo.rank?.toLocaleString()} 名</div>
-            <div class="dimension-bar"><div class="dimension-bar-fill" style="width:${Math.min(100, (1 - rankInfo.rank/320000)*100).toFixed(1)}%; background:linear-gradient(90deg,#4F46E5,#06B6D4)"></div></div>
-          </div>
-          <div class="dimension-item">
-            <div class="dimension-icon">📊</div>
-            <div class="dimension-label">超越全省考生比例</div>
-            <div class="dimension-value">${rankInfo.percentile}%</div>
-            <div class="dimension-bar"><div class="dimension-bar-fill" style="width:${rankInfo.percentile}%; background:linear-gradient(90deg,#10B981,#06B6D4)"></div></div>
-          </div>
-          <div class="dimension-item">
-            <div class="dimension-icon">🎯</div>
-            <div class="dimension-label">院校竞争层次</div>
-            <div class="dimension-value" style="color:${scoreLevel.color}">${scoreLevel.level}级</div>
-            <div style="font-size:12px; color:#6B7280; margin-top:6px">${scoreLevel.desc}</div>
-          </div>
-        </div>
-        <div style="background:#F0F9FF; border-radius:8px; padding:14px 18px; margin-top:16px; font-size:14px; color:#0369A1;">
-          💡 <strong>位次提醒：</strong>${rankInfo.rankText}。填报时请务必以位次作为参考标准，而非单纯比较分数（不同年份试卷难度不同，位次更科学）。
-        </div>
-        ${user.subject.includes('历史') ? `
-        <div style="background:#FEF3C7; border-radius:8px; padding:14px 18px; margin-top:12px; font-size:14px; color:#92400E;">
-          📌 <strong>历史类考生提示：</strong>当前推荐的院校数据以物理类为主。由于历史类考生数量及录取数据有所不同，建议在查看院校时，参照各校的招生章程确认具体的招生计划和分数要求。
-        </div>
-        ` : ''}
-      </div>
+      <!-- ========== 第1页：综合分析与定位 ========== -->
+      <div class="report-page active" id="report-page-1">
+        <div class="report-page-header">📊 综合分析与定位</div>
 
-      <!-- ② 兴趣分析（雷达图） -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">🧠</span>兴趣性格分析（霍兰德模型）</div>
-        <div class="chart-row">
-          <div class="chart-wrap">
-            <canvas id="hollandChart"></canvas>
-          </div>
-          <div class="chart-legend">
-            <div style="margin-bottom:12px;">
-              <div style="font-size:16px; font-weight:700; color:#4F46E5">${hollandType.primaryInfo?.name}</div>
-              <div style="font-size:13px; color:#6B7280; margin-top:4px; line-height:1.6">${hollandType.primaryInfo?.desc}</div>
-              <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px">
-                ${hollandType.primaryInfo?.majors?.slice(0,4).map(m => `<span style="background:#EEF2FF; color:#4F46E5; padding:3px 8px; border-radius:4px; font-size:12px">${m}</span>`).join('')}
+        <!-- 顶部 Hero -->
+        <div class="report-hero">
+          <div class="report-title">📋 ${name}的高考志愿填报分析报告</div>
+          <div class="report-subtitle">基于2025年广东省真实录取数据 · 六维度综合分析 · ${new Date().toLocaleDateString('zh-CN')}</div>
+          <div class="report-meta">
+            <div class="report-meta-item">
+              <div class="report-meta-label">选科组合</div>
+              <div class="report-meta-value">${subjectDisplay}</div>
+            </div>
+            <div class="report-meta-item">
+              <div class="report-meta-label">成绩</div>
+              <div class="report-meta-value">${score}分</div>
+              ${user.examType ? `<div style="font-size:12px; color:#6B7280; margin-top:4px">基于${user.examYear}年${user.examType}换算</div>` : ''}
+            </div>
+            <div class="report-meta-item">
+              <div class="report-meta-label">全省位次（估算）</div>
+              <div class="report-meta-value">约第${rankInfo.rank?.toLocaleString()}名</div>
+              ${user.mockRank && user.totalStudents ? `<div style="font-size:12px; color:#6B7280; margin-top:4px">全市${user.mockRank}名（前${Math.round((user.mockRank/user.totalStudents)*100)}%）</div>` : ''}
+            </div>
+            <div class="report-meta-item">
+              <div class="report-meta-label">成绩层次</div>
+              <div class="report-meta-value" style="font-size:16px; margin-top:6px">
+                <span style="background:${scoreLevel.color}; color:#fff; padding:4px 14px; border-radius:50px; font-size:14px">${scoreLevel.label}</span>
               </div>
             </div>
-            <div style="border-top:1px solid #E5E7EB; padding-top:12px;">
-              <div style="font-size:14px; font-weight:600; color:#6B7280">辅助类型：${hollandType.secondaryInfo?.name}</div>
-              <div style="font-size:13px; color:#9CA3AF; margin-top:4px">${hollandType.secondaryInfo?.desc}</div>
+            <div class="report-meta-item">
+              <div class="report-meta-label">超过全省考生</div>
+              <div class="report-meta-value">${rankInfo.percentile}%</div>
             </div>
-            <div style="border-top:1px solid #E5E7EB; padding-top:12px; margin-top:12px;">
-              <div style="font-size:14px; font-weight:600">职业方向</div>
-              <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px">
-                ${hollandType.primaryInfo?.careers?.map(c => `<span style="background:#D1FAE5; color:#065F46; padding:3px 8px; border-radius:4px; font-size:12px">${c}</span>`).join('')}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ③ 专业推荐 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">📚</span>专业方向推荐</div>
-        <div class="major-grid">
-          ${recommendedMajors.map(major => `
-            <div class="major-card">
-              <div class="major-card-header">
-                <div class="major-name">${major.name}</div>
-                <span class="major-type-tag type-${major.type}">${major.label}</span>
-              </div>
-              <div class="major-reason">${major.reason}</div>
-              <span class="major-trend-tag">${major.trend?.label}</span>
-              ${major.trend?.growth ? `<span style="font-size:11px; color:#6B7280; margin-left:6px">${major.trend.growth}</span>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <!-- ④ 冲稳保院校推荐 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">🏛️</span>冲稳保院校推荐方案</div>
-        <div style="font-size:13px; color:#6B7280; margin-bottom:16px; line-height:1.6">
-          冲：录取概率30-55%，需要发挥稳定 &nbsp;|&nbsp; 稳：录取概率60-85%，分数基本匹配 &nbsp;|&nbsp; 保：录取概率90%+，确保有学上
-        </div>
-        <div class="college-type-tabs">
-          <button class="college-tab chong active" onclick="switchCollegeTab('chong')">🚀 冲刺 (${collegeList.chong.length}所)</button>
-          <button class="college-tab wen" onclick="switchCollegeTab('wen')">✅ 稳妥 (${collegeList.wen.length}所)</button>
-          <button class="college-tab bao" onclick="switchCollegeTab('bao')">🛡️ 保底 (${collegeList.bao.length}所)</button>
-        </div>
-        <div id="college-list-container">
-          ${renderCollegeList(collegeList.chong, 'chong')}
-        </div>
-      </div>
-
-      <!-- ⑤ 城市策略 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">🏙️</span>城市选择策略</div>
-        <div style="display:flex; flex-direction:column; gap:14px">
-          ${cityStrategy.map(s => `
-            <div style="background:#F8F9FF; border-radius:8px; padding:16px 18px; border:1px solid #E5E7EB; border-left:3px solid ${s.priority <= 2 ? '#4F46E5' : '#9CA3AF'}">
-              <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px">
-                <span style="background:${s.priority <= 2 ? '#4F46E5' : '#9CA3AF'}; color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">${s.priority}</span>
-                <span style="font-size:17px; font-weight:700">${s.city}</span>
-              </div>
-              <div style="font-size:13px; color:#374151; line-height:1.6; margin-bottom:8px">${s.reason}</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px">
-                ${s.colleges.map(c => `<span style="background:#EEF2FF; color:#4F46E5; padding:3px 8px; border-radius:4px; font-size:12px">${c}</span>`).join('')}
-              </div>
-              <div style="font-size:12px; color:#6B7280; margin-top:8px">📊 ${s.employmentRate}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <!-- 【新增】行业趋势摘要 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">📈</span>最新行业趋势与专业匹配</div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px">
-          ${data.industryTrends?.slice(0, 5).map(ind => `
-            <div style="background:#F0FDFA; border:1px solid #99F6E4; border-radius:8px; padding:14px; flex:1 1 160px; min-width:150px">
-              <div style="font-size:15px; font-weight:700; color:#047857; margin-bottom:6px">${ind.name}</div>
-              <div style="font-size:12px; color:#059669; margin-bottom:4px">📊 ${ind.growth} · ${ind.stage}</div>
-              <div style="font-size:12px; color:#065F46; line-height:1.5">
-                <strong>推荐专业：</strong><br/>
-                ${ind.majors.slice(0, 3).join('、')}${ind.majors.length > 3 ? '...' : ''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        <div style="font-size:13px; color:#6B7280; background:#F9FAFB; padding:12px 14px; border-radius:6px; border-left:3px solid #10B981">
-          💡 <strong>行业洞察：</strong>上述行业根据2025年国家产业政策与发展增速筛选，建议结合自身兴趣选择相关方向，未来就业机会更多、薪资潜力更大。
-        </div>
-      </div>
-
-      <!-- ⑥ 志愿填报方案（具体填报表格） -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">📝</span>具体志愿填报方案</div>
-        <div class="volunteer-plan">
-        <div class="plan-intro">
-          基于您的分数层次和兴趣偏好，为您制定以下具体的30个志愿填报方案。建议按"冲-稳-保"顺序填报，每个梯度内院校按个人喜好排序。
-          <div style="margin-top:10px; font-size:12px; color:#6B7280; background:#F0F9FF; padding:8px 12px; border-radius:6px; border-left:3px solid #0284C7">
-            💡 <strong>三梯度分布：</strong>冲(10个)·稳(12个)·保(8个) = 30个志愿
           </div>
         </div>
-          
-          <div class="volunteer-table-container">
-            <table class="volunteer-table">
-              <thead>
-                <tr>
-                  <th style="width:60px">志愿号</th>
-                  <th style="width:140px">院校名称</th>
-                  <th style="width:120px">专业组</th>
-                  <th style="width:140px">最低分 & 历年数据</th>
-                  <th style="width:100px">录取概率</th>
-                  <th style="width:200px">推荐专业 & 行业</th>
-                  <th style="width:140px">学费备注</th>
-                  <th style="width:140px">填报策略</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${generateVolunteerTableContent(collegeList, user)}
-              </tbody>
-            </table>
+
+        <!-- ① 分数定位 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">📍</span>分数定位与位次分析</div>
+          <div class="dimension-grid">
+            <div class="dimension-item">
+              <div class="dimension-icon">🏆</div>
+              <div class="dimension-label">全省位次${user.subject.includes('历史') ? '（历史类）' : '（物理类）'}</div>
+              <div class="dimension-value">约第 ${rankInfo.rank?.toLocaleString()} 名</div>
+              <div class="dimension-bar"><div class="dimension-bar-fill" style="width:${Math.min(100, (1 - rankInfo.rank/320000)*100).toFixed(1)}%; background:var(--primary)"></div></div>
+            </div>
+            <div class="dimension-item">
+              <div class="dimension-icon">📊</div>
+              <div class="dimension-label">超越全省考生比例</div>
+              <div class="dimension-value">${rankInfo.percentile}%</div>
+              <div class="dimension-bar"><div class="dimension-bar-fill" style="width:${rankInfo.percentile}%; background:var(--success)"></div></div>
+            </div>
+            <div class="dimension-item">
+              <div class="dimension-icon">🎯</div>
+              <div class="dimension-label">院校竞争层次</div>
+              <div class="dimension-value" style="color:${scoreLevel.color}">${scoreLevel.level}级</div>
+              <div style="font-size:12px; color:#6B7280; margin-top:6px">${scoreLevel.desc}</div>
+            </div>
           </div>
-          
-          <div class="plan-strategy">
-            <div class="strategy-title">📌 五梯度填报策略详解：</div>
-            <div class="strategy-grid">
-            <div class="strategy-item">
-              <div class="strategy-icon" style="background:#FEE2E2; color:#EF4444">🚀</div>
-              <div>
-                <strong style="color:#EF4444">冲刺梯度（志愿1-10）</strong>
-                <p>录取概率30-50%，选择往年最低位次高于你30-50名的院校。专业组内填满6个专业并<span style="background:#FEE2E2; padding:2px 6px; border-radius:3px">必须服从调剂</span>。典型：北京大学、清华大学、浙江大学等985顶尖校的部分专业组</p>
-              </div>
+          <div style="background:#F8FAFC; border-radius:8px; padding:14px 18px; margin-top:16px; font-size:14px; color:#334155;">
+            💡 <strong>位次提醒：</strong>${rankInfo.rankText}。填报时请务必以位次作为参考标准，而非单纯比较分数（不同年份试卷难度不同，位次更科学）。
+          </div>
+          ${user.subject.includes('历史') ? `
+          <div style="background:#FFFBEB; border-radius:8px; padding:14px 18px; margin-top:12px; font-size:14px; color:#92400E;">
+            📌 <strong>历史类考生提示：</strong>当前推荐的院校数据以物理类为主。由于历史类考生数量及录取数据有所不同，建议在查看院校时，参照各校的招生章程确认具体的招生计划和分数要求。
+          </div>
+          ` : ''}
+        </div>
+
+        <!-- ② 兴趣分析（雷达图） -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">🧠</span>兴趣性格分析（霍兰德模型）</div>
+          <div class="chart-row">
+            <div class="chart-wrap">
+              <canvas id="hollandChart"></canvas>
             </div>
-            <div class="strategy-item">
-              <div class="strategy-icon" style="background:#FEF3C7; color:#F59E0B">✅</div>
-              <div>
-                <strong style="color:#F59E0B">稳妥梯度（志愿11-22）</strong>
-                <p>录取概率60-80%，分数基本匹配或略低。兼顾院校层次和专业匹配度，热门专业优先填报。典型：武汉大学、华中科技大学、电子科大等985/211名校</p>
-              </div>
-            </div>
-            <div class="strategy-item">
-              <div class="strategy-icon" style="background:#DBEAFE; color:#0284C7">🛡️</div>
-              <div>
-                <strong style="color:#0284C7">保底梯度（志愿23-30）</strong>
-                <p>录取概率90%以上，确保录取。包括实力强劲的一本院校和各地方高校特色专业。典型：广东医科大学、广东工业大学等地方强势院校</p>
-              </div>
-            </div>
-              <div class="strategy-item">
-                <div class="strategy-icon" style="background:#D1FAE5; color:#10B981">🛡️</div>
-                <div>
-                  <strong style="color:#10B981">保底梯度（志愿9-10）</strong>
-                  <p>录取概率90%+，确保无论如何都能录取。位次低于你至少50-100名，可填报偏好专业。典型：华南师范普通组、广州大学101/102组</p>
+            <div class="chart-legend">
+              <div style="margin-bottom:12px;">
+                <div style="font-size:16px; font-weight:700; color:var(--primary)">${hollandType.primaryInfo?.name}</div>
+                <div style="font-size:13px; color:#6B7280; margin-top:4px; line-height:1.6">${hollandType.primaryInfo?.desc}</div>
+                <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px">
+                  ${hollandType.primaryInfo?.majors?.slice(0,4).map(m => `<span style="background:#F0F4FF; color:var(--primary); padding:3px 8px; border-radius:4px; font-size:12px">${m}</span>`).join('')}
                 </div>
               </div>
-              <div class="strategy-item">
-                <div class="strategy-icon" style="background:#E0E7FF; color:#6366F1">📌</div>
-                <div>
-                  <strong style="color:#6366F1">垫底梯度（备用）</strong>
-                  <p>录取概率95%+，极低风险。当冲稳保都未录时的最后保障，位次明显低于你（100+名）。</p>
-                </div>
+              <div style="border-top:1px solid #E5E7EB; padding-top:12px;">
+                <div style="font-size:14px; font-weight:600; color:#6B7280">辅助类型：${hollandType.secondaryInfo?.name}</div>
+                <div style="font-size:13px; color:#9CA3AF; margin-top:4px">${hollandType.secondaryInfo?.desc}</div>
               </div>
-              <div class="strategy-item">
-                <div class="strategy-icon" style="background:#F3E8FF; color:#8B5CF6">✨</div>
-                <div>
-                  <strong style="color:#8B5CF6">捡漏梯度（机会）</strong>
-                  <p>往年最低位次高于你，但因招生计划增加或报考热度下降，今年或有机会。高风险高收益，需谨慎。</p>
+              <div style="border-top:1px solid #E5E7EB; padding-top:12px; margin-top:12px;">
+                <div style="font-size:14px; font-weight:600">职业方向</div>
+                <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px">
+                  ${hollandType.primaryInfo?.careers?.map(c => `<span style="background:#D1FAE5; color:#065F46; padding:3px 8px; border-radius:4px; font-size:12px">${c}</span>`).join('')}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- ③ 专业推荐 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">📚</span>专业方向推荐</div>
+          <div class="major-grid">
+            ${recommendedMajors.map(major => `
+              <div class="major-card">
+                <div class="major-card-header">
+                  <div class="major-name">${major.name}</div>
+                  <span class="major-type-tag type-${major.type}">${major.label}</span>
+                </div>
+                <div class="major-reason">${major.reason}</div>
+                <span class="major-trend-tag">${major.trend?.label}</span>
+                ${major.trend?.growth ? `<span style="font-size:11px; color:#6B7280; margin-left:6px">${major.trend.growth}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- ④ 城市策略 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">🏙️</span>城市选择策略</div>
+          <div style="display:flex; flex-direction:column; gap:12px">
+            ${cityStrategy.slice(0,4).map(s => `
+              <div style="background:#F8FAFC; border-radius:8px; padding:14px 16px; border:1px solid #E5E7EB; border-left:3px solid ${s.priority <= 2 ? 'var(--primary)' : '#9CA3AF'}">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+                  <span style="background:${s.priority <= 2 ? 'var(--primary)' : '#9CA3AF'}; color:#fff; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0">${s.priority}</span>
+                  <span style="font-size:15px; font-weight:700">${s.city}</span>
+                </div>
+                <div style="font-size:13px; color:#374151; line-height:1.5; margin-bottom:6px">${s.reason}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:4px">
+                  ${s.colleges.slice(0,3).map(c => `<span style="background:#F0F4FF; color:var(--primary); padding:2px 8px; border-radius:4px; font-size:12px">${c}</span>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 【新增】行业趋势摘要 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">📈</span>最新行业趋势与专业匹配</div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px">
+            ${data.industryTrends?.slice(0, 4).map(ind => `
+              <div style="background:#F8FAFC; border:1px solid #E5E7EB; border-radius:8px; padding:14px; flex:1 1 150px; min-width:140px">
+                <div style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px">${ind.name}</div>
+                <div style="font-size:12px; color:var(--text-sub); margin-bottom:4px">📊 ${ind.growth} · ${ind.stage}</div>
+                <div style="font-size:12px; color:var(--text); line-height:1.5">
+                  ${ind.majors.slice(0, 3).join('、')}${ind.majors.length > 3 ? '...' : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="report-page-footer">第 1 页 / 共 2 页</div>
       </div>
 
-      <!-- ⑦ 核心建议 -->
-      <div class="report-section">
-        <div class="section-title"><span class="section-icon">📋</span>填报操作指南</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
-          <div style="background:#EFF6FF; border-radius:8px; padding:16px; border-left:3px solid #0284C7">
-            <div style="font-weight:700; color:#0C4A6E; margin-bottom:8px">✅ 填报流程</div>
-            <ol style="font-size:13px; color:#0C4A6E; margin-left:16px; line-height:1.8">
-              <li>登陆省教育考试院高考志愿填报系统</li>
-              <li>按"冲-稳-保-垫-捡"顺序逐个填报院校专业组代码</li>
-              <li>冲刺梯度<span style="background:#FEE2E2; padding:2px 6px; border-radius:3px">必须勾选服从调剂</span></li>
-              <li>保存前多次核对代码和专业组号</li>
-              <li>确认提交前截图备份</li>
-            </ol>
+      <!-- ========== 第2页：院校推荐与填报方案 ========== -->
+      <div class="report-page" id="report-page-2">
+        <div class="report-page-header">📋 院校推荐与填报方案</div>
+
+        <!-- ④ 冲稳保院校推荐 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">🏛️</span>冲稳保院校推荐方案</div>
+          <div style="font-size:13px; color:#6B7280; margin-bottom:16px; line-height:1.6">
+            冲：录取概率30-55%，需要发挥稳定 &nbsp;|&nbsp; 稳：录取概率60-85%，分数基本匹配 &nbsp;|&nbsp; 保：录取概率90%+，确保有学上
           </div>
-          <div style="background:#FEF3C7; border-radius:8px; padding:16px; border-left:3px solid #EAB308">
-            <div style="font-weight:700; color:#713F12; margin-bottom:8px">⚠️ 常见坑点</div>
-            <ul style="font-size:13px; color:#713F12; margin-left:16px; line-height:1.8">
-              <li>冲刺院校不勾选调剂 → 高分被退档</li>
-              <li>只看分数不看位次 → 大小年风险</li>
-              <li>一梯度内院校顺序随意 → 前面梯度满了机会损失</li>
-              <li>忽视专业组代码 → 代码错误彻底作废</li>
-              <li>体检受限未查招生章程 → 被退档</li>
+          <div class="college-type-tabs">
+            <button class="college-tab chong active" onclick="switchCollegeTab('chong')">🚀 冲刺 (${collegeList.chong.length}所)</button>
+            <button class="college-tab wen" onclick="switchCollegeTab('wen')">✅ 稳妥 (${collegeList.wen.length}所)</button>
+            <button class="college-tab bao" onclick="switchCollegeTab('bao')">🛡️ 保底 (${collegeList.bao.length}所)</button>
+          </div>
+          <div id="college-list-container">
+            ${renderCollegeList(collegeList.chong, 'chong')}
+          </div>
+        </div>
+
+        <!-- ⑤ 志愿填报方案表格 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">📝</span>具体志愿填报方案</div>
+          <div class="volunteer-plan">
+            <div class="plan-intro">
+              基于您的分数层次和兴趣偏好，为您制定以下具体的30个志愿填报方案。建议按"冲-稳-保"顺序填报，每个梯度内院校按个人喜好排序。
+              <div style="margin-top:10px; font-size:12px; color:#6B7280; background:#F8FAFC; padding:8px 12px; border-radius:6px; border-left:3px solid var(--primary)">
+                💡 <strong>三梯度分布：</strong>冲(10个)·稳(12个)·保(8个) = 30个志愿
+              </div>
+            </div>
+            
+            <div class="volunteer-table-container">
+              <table class="volunteer-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">志愿号</th>
+                    <th style="width:140px">院校名称</th>
+                    <th style="width:120px">专业组</th>
+                    <th style="width:140px">最低分 & 历年数据</th>
+                    <th style="width:100px">录取概率</th>
+                    <th style="width:200px">推荐专业 & 行业</th>
+                    <th style="width:140px">学费备注</th>
+                    <th style="width:140px">填报策略</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${generateVolunteerTableContent(collegeList, user)}
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="plan-strategy">
+              <div class="strategy-title">📌 五梯度填报策略详解：</div>
+              <div class="strategy-grid">
+                <div class="strategy-item">
+                  <div class="strategy-icon" style="background:#FEE2E2; color:#EF4444">🚀</div>
+                  <div>
+                    <strong style="color:#EF4444">冲刺梯度（志愿1-10）</strong>
+                    <p>录取概率30-50%，选择往年最低位次高于你30-50名的院校。专业组内填满6个专业并<span style="background:#FEE2E2; padding:2px 6px; border-radius:3px">必须服从调剂</span>。</p>
+                  </div>
+                </div>
+                <div class="strategy-item">
+                  <div class="strategy-icon" style="background:#FEF3C7; color:#F59E0B">✅</div>
+                  <div>
+                    <strong style="color:#F59E0B">稳妥梯度（志愿11-22）</strong>
+                    <p>录取概率60-80%，分数基本匹配或略低。兼顾院校层次和专业匹配度，热门专业优先填报。</p>
+                  </div>
+                </div>
+                <div class="strategy-item">
+                  <div class="strategy-icon" style="background:#DBEAFE; color:#0284C7">🛡️</div>
+                  <div>
+                    <strong style="color:#0284C7">保底梯度（志愿23-30）</strong>
+                    <p>录取概率90%以上，确保录取。包括实力强劲的一本院校和各地方高校特色专业。</p>
+                  </div>
+                </div>
+                <div class="strategy-item">
+                  <div class="strategy-icon" style="background:#D1FAE5; color:#10B981">🛡️</div>
+                  <div>
+                    <strong style="color:#10B981">垫底梯度（备用）</strong>
+                    <p>录取概率95%+，极低风险。当冲稳保都未录时的最后保障，位次明显低于你（100+名）。</p>
+                  </div>
+                </div>
+                <div class="strategy-item">
+                  <div class="strategy-icon" style="background:#F3E8FF; color:#8B5CF6">✨</div>
+                  <div>
+                    <strong style="color:#8B5CF6">捡漏梯度（机会）</strong>
+                    <p>往年最低位次高于你，但因招生计划增加或报考热度下降，今年或有机会。高风险高收益。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑥ 核心建议路径 -->
+        <div class="report-section">
+          <div class="section-title"><span class="section-icon">📋</span>填报操作指南</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px">
+            <div style="background:#EFF6FF; border-radius:8px; padding:14px; border-left:3px solid var(--primary)">
+              <div style="font-weight:700; color:#1e3a8a; margin-bottom:8px">✅ 填报流程</div>
+              <ol style="font-size:13px; color:#1e3a8a; margin-left:16px; line-height:1.8">
+                <li>登陆省教育考试院高考志愿填报系统</li>
+                <li>按"冲-稳-保"顺序逐个填报院校专业组代码</li>
+                <li>冲刺梯度<span style="background:#FEE2E2; padding:2px 6px; border-radius:3px">必须勾选服从调剂</span></li>
+                <li>保存前多次核对代码和专业组号</li>
+                <li>确认提交前截图备份</li>
+              </ol>
+            </div>
+            <div style="background:#FEF3C7; border-radius:8px; padding:14px; border-left:3px solid #EAB308">
+              <div style="font-weight:700; color:#713F12; margin-bottom:8px">⚠️ 常见坑点</div>
+              <ul style="font-size:13px; color:#713F12; margin-left:16px; line-height:1.8">
+                <li>冲刺院校不勾选调剂 → 高分被退档</li>
+                <li>只看分数不看位次 → 大小年风险</li>
+                <li>一梯度内院校顺序随意 → 前面梯度满了机会损失</li>
+                <li>忽视专业组代码 → 代码错误彻底作废</li>
+                <li>体检受限未查招生章程 → 被退档</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 路径推荐 -->
+          <div class="advice-card">
+            <div class="advice-title">⭐ 推荐路径</div>
+            <div class="advice-path">
+              ${collegeList.chong[0] ? `<span style="background:#FEE2E2; color:#EF4444; padding:4px 12px; border-radius:6px; font-weight:700">冲 ${collegeList.chong[0].shortName}</span><span class="path-arrow">→</span>` : ''}
+              ${collegeList.wen[0] ? `<span style="background:#FEF3C7; color:#92400E; padding:4px 12px; border-radius:6px; font-weight:700">稳 ${collegeList.wen[0].shortName}</span><span class="path-arrow">→</span>` : ''}
+              ${collegeList.bao[0] ? `<span style="background:#D1FAE5; color:#065F46; padding:4px 12px; border-radius:6px; font-weight:700">保 ${collegeList.bao[0].shortName}</span>` : ''}
+            </div>
+            <ul class="key-points">
+              ${summary.keyPoints.map(p => `<li>${p}</li>`).join('')}
             </ul>
           </div>
-        </div>
-        <div style="background:#F0FDF4; border-radius:8px; padding:16px; border-left:3px solid #16A34A">
-          <div style="font-weight:700; color:#15803D; margin-bottom:8px">💡 核心建议</div>
-          <div style="font-size:13px; color:#15803D; line-height:1.8">
-            🎯 <strong>位次优先于分数：</strong>不同年份试卷难度差异大，位次才是跨年对比的科学方法。查近5年最低位次趋势，判断今年是"大年"还是"小年"。<br/>
-            🛡️ <strong>冲稳保梯度缺一不可：</strong>冲没中有稳垫底，稳没中有保兜底。三个梯度都要有明确把握的院校。<br/>
-            📊 <strong>行业趋势很重要：</strong>上述推荐行业都是国家十五五重点，就业前景和薪资潜力都更好。选专业时多考虑。<br/>
-            🔍 <strong>临界前务必再核实：</strong>本报告基于2025年数据，填报前登陆掌上高考APP核实最新数据，官方为最终依据。
-          </div>
-        </div>
-      </div>
 
-      <!-- ⑧ 核心建议 -->
-        <div class="advice-card">
-          <div class="advice-title">⭐ 推荐路径</div>
-          <div class="advice-path">
-            ${collegeList.chong[0] ? `<span style="background:#FEE2E2; color:#EF4444; padding:4px 12px; border-radius:6px; font-weight:700">冲 ${collegeList.chong[0].shortName}</span><span class="path-arrow">→</span>` : ''}
-            ${collegeList.wen[0] ? `<span style="background:#FEF3C7; color:#92400E; padding:4px 12px; border-radius:6px; font-weight:700">稳 ${collegeList.wen[0].shortName}</span><span class="path-arrow">→</span>` : ''}
-            ${collegeList.bao[0] ? `<span style="background:#D1FAE5; color:#065F46; padding:4px 12px; border-radius:6px; font-weight:700">保 ${collegeList.bao[0].shortName}</span>` : ''}
+          <div style="background:#F8FAFC; border-radius:8px; padding:14px 16px; border-left:3px solid var(--success); margin-top:16px">
+            <div style="font-weight:700; color:#065F46; margin-bottom:6px">💡 核心建议</div>
+            <div style="font-size:13px; color:#065F46; line-height:1.8">
+              🎯 <strong>位次优先于分数：</strong>不同年份试卷难度差异大，位次才是跨年对比的科学方法。<br/>
+              🛡️ <strong>冲稳保梯度缺一不可：</strong>每个梯度都要有明确把握的院校。<br/>
+              📊 <strong>行业趋势很重要：</strong>选专业时多考虑国家十五五重点方向。<br/>
+              🔍 <strong>填报前务必再核实：</strong>本报告基于2025年数据，请以官方最终数据为准。
+            </div>
           </div>
-          <ul class="key-points">
-            ${summary.keyPoints.map(p => `<li>${p}</li>`).join('')}
-          </ul>
         </div>
 
         <!-- 风险提示 -->
-        <div class="section-title" style="margin-top:24px"><span class="section-icon">⚠️</span>风险提示</div>
-        <div class="risk-grid">
-          <div class="risk-item"><div class="risk-icon">📋</div><div class="risk-text"><strong>服从调剂：</strong>冲刺院校务必勾选服从专业调剂，否则高分被退档得不偿失</div></div>
-          <div class="risk-item"><div class="risk-icon">📈</div><div class="risk-text"><strong>看五年趋势：</strong>只看一年数据不够，要查近5年最低位次，防大小年风险</div></div>
-          <div class="risk-item"><div class="risk-icon">🏥</div><div class="risk-text"><strong>体检限报：</strong>色盲色弱对医学、化工等专业有限制，报考前查清楚招生章程</div></div>
-          <div class="risk-item"><div class="risk-icon">📌</div><div class="risk-text"><strong>保底必须有：</strong>至少2-3个90%以上把握的保底志愿，避免一分之差滑档</div></div>
-          <div class="risk-item"><div class="risk-icon">🎓</div><div class="risk-text"><strong>师范注意提前批：</strong>华南师范教师专项等有提前批，不占普通批名额，可单独研究</div></div>
-          <div class="risk-item"><div class="risk-icon">🔍</div><div class="risk-text"><strong>数据核实：</strong>本报告数据基于2025年，填报前务必到掌上高考APP核实最新数据</div></div>
+        <div class="report-section">
+          <div class="section-title" style="margin-top:0"><span class="section-icon">⚠️</span>风险提示</div>
+          <div class="risk-grid">
+            <div class="risk-item"><div class="risk-icon">📋</div><div class="risk-text"><strong>服从调剂：</strong>冲刺院校务必勾选服从专业调剂，否则高分被退档得不偿失</div></div>
+            <div class="risk-item"><div class="risk-icon">📈</div><div class="risk-text"><strong>看五年趋势：</strong>只看一年数据不够，要查近5年最低位次，防大小年风险</div></div>
+            <div class="risk-item"><div class="risk-icon">🏥</div><div class="risk-text"><strong>体检限报：</strong>色盲色弱对医学、化工等专业有限制，报考前查清楚招生章程</div></div>
+            <div class="risk-item"><div class="risk-icon">📌</div><div class="risk-text"><strong>保底必须有：</strong>至少2-3个90%以上把握的保底志愿，避免一分之差滑档</div></div>
+            <div class="risk-item"><div class="risk-icon">🎓</div><div class="risk-text"><strong>师范注意提前批：</strong>华南师范教师专项等有提前批，不占普通批名额，可单独研究</div></div>
+            <div class="risk-item"><div class="risk-icon">🔍</div><div class="risk-text"><strong>数据核实：</strong>本报告数据基于2025年，填报前务必到掌上高考APP核实最新数据</div></div>
+          </div>
         </div>
+
+        <div class="report-page-footer">第 2 页 / 共 2 页</div>
       </div>
 
       <!-- 操作按钮 -->
@@ -1021,6 +1031,15 @@ function renderReport(user, data) {
   setTimeout(() => renderHollandChart(hollandType), 100);
   // 院校缓存
   window._collegeList = collegeList;
+}
+
+// 报告页面切换
+function switchReportPage(pageNum) {
+  document.querySelectorAll('.report-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.report-page-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`report-page-${pageNum}`).classList.add('active');
+  document.querySelectorAll('.report-page-nav-btn')[pageNum - 1].classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 // ============================================================
@@ -1118,7 +1137,7 @@ function generateVolunteerRow(college, index, type, user) {
     '冲': '#EF4444',
     '稳': '#F59E0B', 
     '保': '#10B981',
-    '垫': '#6366F1',
+    '垫': '#1e40af',
     '捡': '#8B5CF6'
   };
   
@@ -1226,10 +1245,10 @@ function renderHollandChart(hollandType) {
       datasets: [{
         label: '兴趣分布',
         data: dataValues,
-        backgroundColor: 'rgba(79,70,229,0.15)',
-        borderColor: '#4F46E5',
+        backgroundColor: 'rgba(30,64,175,0.15)',
+        borderColor: '#1e40af',
         borderWidth: 2,
-        pointBackgroundColor: '#4F46E5',
+        pointBackgroundColor: '#1e40af',
         pointRadius: 4,
       }]
     },
@@ -1283,7 +1302,7 @@ function updateConverter() {
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
       <span class="confidence-tag" style="background:${result.confidenceLevel.color}1A; color:${result.confidenceLevel.color}">${result.confidenceLevel.label}</span>
     </div>
-    <div class="result-main">${examYear}年${examType} ${score}分 → 预估高考 <span style="color:#4F46E5">${result.estimatedGaoKao}分</span></div>
+    <div class="result-main">${examYear}年${examType} ${score}分 → 预估高考 <span style="color:#1e40af">${result.estimatedGaoKao}分</span></div>
     <div class="result-range">合理区间：<strong>${result.range}</strong></div>
     ${rankInfoHtml}
     <div style="margin:10px 0; display:flex; flex-wrap:wrap; gap:10px">
